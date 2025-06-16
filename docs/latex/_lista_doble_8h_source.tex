@@ -1,0 +1,39 @@
+\doxysection{Lista\+Doble.\+h}
+\hypertarget{_lista_doble_8h_source}{}\label{_lista_doble_8h_source}\mbox{\hyperlink{_lista_doble_8h}{Ir a la documentación de este archivo.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{comment}{//\ ListaDoble.h}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#ifndef\ LISTADOBLE\_H}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#define\ LISTADOBLE\_H}}
+\DoxyCodeLine{00004\ }
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{_nodo_8h}{Nodo.h}}"{}}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{_fecha_hora_8h}{FechaHora.h}}"{}}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{_turno_8h}{Turno.h}}"{}}}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{keyword}{class\ }ListaDoble\ \{}
+\DoxyCodeLine{00015\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00016\ \ \ \ \ \mbox{\hyperlink{class_nodo}{Nodo}}*\ cabeza;\ \ \ }
+\DoxyCodeLine{00017\ \ \ \ \ \mbox{\hyperlink{class_nodo}{Nodo}}*\ cola;\ \ \ \ \ }
+\DoxyCodeLine{00018\ \ \ \ \ \textcolor{keywordtype}{int}\ size;\ \ \ \ \ \ \ }
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00021\ \ \ \ \ ListaDoble();}
+\DoxyCodeLine{00022\ \ \ \ \ \string~ListaDoble();}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keywordtype}{void}\ agregar(\mbox{\hyperlink{class_turno}{Turno}}*\ dato);}
+\DoxyCodeLine{00025\ \ \ \ \ \textcolor{keywordtype}{bool}\ eliminarPorCedula(\textcolor{keyword}{const}\ std::string\&\ cedula);}
+\DoxyCodeLine{00026\ \ \ \ \ \mbox{\hyperlink{class_turno}{Turno}}*\ buscarPorCedula(\textcolor{keyword}{const}\ std::string\&\ cedula);}
+\DoxyCodeLine{00027\ \ \ \ \ \textcolor{keywordtype}{bool}\ reemplazarPorCedula(\textcolor{keyword}{const}\ std::string\&\ cedula,\ \mbox{\hyperlink{class_turno}{Turno}}*\ nuevoDato);}
+\DoxyCodeLine{00028\ \ \ \ \ \textcolor{keywordtype}{void}\ mostrar();}
+\DoxyCodeLine{00029\ \ \ \ \ \mbox{\hyperlink{class_nodo}{Nodo}}*\ getCabeza();}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keywordtype}{bool}\ existeTurno(\textcolor{keywordtype}{int}\ dia,\ \textcolor{keywordtype}{int}\ mes,\ \textcolor{keywordtype}{int}\ anio,\ \textcolor{keywordtype}{int}\ hora,\ \textcolor{keywordtype}{int}\ minuto,\ \textcolor{keyword}{const}\ std::string\&\ provincia);}
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{keywordtype}{int}\ getSize()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keywordtype}{void}\ guardarBackup(\textcolor{keyword}{const}\ std::string\&\ archivo);}
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keywordtype}{void}\ cargarBackup(\textcolor{keyword}{const}\ std::string\&\ archivo);}
+\DoxyCodeLine{00034\ \};}
+\DoxyCodeLine{00035\ }
+\DoxyCodeLine{00036\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

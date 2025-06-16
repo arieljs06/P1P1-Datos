@@ -1,0 +1,40 @@
+\doxysection{Paciente.\+h}
+\hypertarget{_paciente_8h_source}{}\label{_paciente_8h_source}\mbox{\hyperlink{_paciente_8h}{Ir a la documentación de este archivo.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ PACIENTE\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ PACIENTE\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{keyword}{class\ }Paciente\ \{}
+\DoxyCodeLine{00010\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00011\ \ \ \ \ std::string\ nombre;}
+\DoxyCodeLine{00012\ \ \ \ \ std::string\ apellido;}
+\DoxyCodeLine{00013\ \ \ \ \ std::string\ cedula;}
+\DoxyCodeLine{00014\ \ \ \ \ std::string\ direccion;}
+\DoxyCodeLine{00015\ \ \ \ \ std::string\ correo;}
+\DoxyCodeLine{00016\ \ \ \ \ std::string\ telefono;}
+\DoxyCodeLine{00017\ \ \ \ \ std::string\ sexo;}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00019\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00020\ \ \ \ \ Paciente(\textcolor{keyword}{const}\ std::string\&\ nombre,\ \textcolor{keyword}{const}\ std::string\&\ apellido,\ \textcolor{keyword}{const}\ std::string\&\ cedula,}
+\DoxyCodeLine{00021\ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ std::string\&\ direccion,\ \textcolor{keyword}{const}\ std::string\&\ correo,}
+\DoxyCodeLine{00022\ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ std::string\&\ telefono,\ \textcolor{keyword}{const}\ std::string\&\ sexo);}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \ \ \ \ \string~Paciente();}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00026\ \ \ \ \ std::string\ getNombre()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00027\ \ \ \ \ std::string\ getApellido()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00028\ \ \ \ \ std::string\ getCedula()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00029\ \ \ \ \ std::string\ getDireccion()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00030\ \ \ \ \ std::string\ getCorreo()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00031\ \ \ \ \ std::string\ getTelefono()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00032\ \ \ \ \ std::string\ getSexo()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{keywordtype}{void}\ mostrar()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00035\ \};}
+\DoxyCodeLine{00036\ }
+\DoxyCodeLine{00037\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}
