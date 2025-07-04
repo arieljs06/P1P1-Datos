@@ -20,8 +20,14 @@
 #include "Marquee.h"
 
 void guardarTurnoEnArchivo(Turno *); 
+void guardarPacienteEnArchivo(Paciente *);
+void eliminarTurnoPorCedula(const std::string&);
+void generarTablaHash();
+void imprimirTablaHash();
 
 void Menu::mostrarMenu() {
+    cargarPacientesDesdeArchivo();
+    cargarTurnosDesdeArchivoTXT();
     const char *opciones[] = {
         "Agregar paciente",
         "Agregar turno",
@@ -32,16 +38,19 @@ void Menu::mostrarMenu() {
         "Mostrar todos los pacientes", 
         "Guardar backup",
         "Cargar backup",
+        "Tabla Hash",
+        "Mostra Tabla Hash"
         "Mostrar ayuda",
         "Salir"
     };
-    int n = 11;
+    int n = 12;
     int seleccion = 0;
     int tecla;
 
     do {
         system("cls");
-        std::cout << "\n--- MENU DE TURNOS ---\n\n";
+        generarTablaHash();
+        std::cout << "\n\n--- MENU DE TURNOS ---\n\n";
         for (int i = 0; i < n; ++i) {
             if (i == seleccion)
                 std::cout << " -> ";
@@ -69,8 +78,9 @@ void Menu::mostrarMenu() {
                 case 6: std::cout<<"\n";mostrarPacientes(); break; 
                 case 7: std::cout<<"\n";guardarBackup(); break;
                 case 8: std::cout<<"\n";cargarBackup(); break;
-                case 9: std::cout<<"\n";mostrarAyuda(); break;
-                case 10:
+                case 9: std::cout<<"\n";generarTablaHash(); imprimirTablaHash(); break;
+                case 10: std::cout<<"\n";mostrarAyuda(); break;
+                case 11:
                     std::cout << "Saliendo...\n";
                     return;
                 default:
@@ -126,7 +136,9 @@ void Menu::agregarPaciente() {
     } while (direccion.empty());
 
     Paciente* paciente = new Paciente(nombre, apellido, cedula, direccion, correo, telefono, sexo);
+    
     pacientes.agregar(paciente);
+    guardarPacienteEnArchivo(paciente);
     std::cout << "Paciente agregado correctamente.\n";
 }
 
@@ -134,8 +146,12 @@ void Menu::agregarPaciente() {
 void Menu::agregarTurno() {
     std::string cedula = validarCedula("Ingrese cédula del paciente: ");
     Paciente* paciente = pacientes.buscarPorCedula(cedula);
+    Turno* turnopre = lista.buscarPorCedula(cedula);
     if (!paciente) {
         std::cout << "No existe un paciente con esa cédula. Debe agregarlo primero.\n";
+        return;
+    }else if(turnopre){
+        std::cout << "El paciente ya tiene turno asignado\n";
         return;
     }
 
@@ -256,6 +272,7 @@ void Menu::buscarTurno() {
 void Menu::eliminarTurno() {
     std::string cedula = validarNumeros("Ingrese cedula para eliminar: ");
     if (lista.eliminarPorCedula(cedula)) {
+        eliminarTurnoPorCedula(cedula);
         std::cout << "Turno eliminado.\n";
     } else {
         std::cout << "No se encontro turno con esa cedula.\n";
@@ -606,15 +623,49 @@ void Menu::capitalizar(std::string& texto) {
     }
 }
 
+std::string base64_encode(const std::string &in) {
+    const std::string base64_chars = 
+             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+             "abcdefghijklmnopqrstuvwxyz"
+             "0123456789+/";
+    
+    std::string out;
+    int val = 0, valb = -6;
+    size_t len = in.length();
+    unsigned int cnt = 0;
+    
+    for (unsigned char c : in) {
+        val = (val << 8) + c;
+        valb += 8;
+        while (valb >= 0) {
+            out.push_back(base64_chars[(val >> valb) & 0x3F]);
+            valb -= 6;
+            cnt++;
+        }
+    }
+    
+    if (valb > -6) {
+        out.push_back(base64_chars[(val << 8) >> (valb + 8) & 0x3F]);
+        cnt++;
+    }
+    
+    while (cnt % 4) {
+        out.push_back('=');
+        cnt++;
+    }
+    
+    return out;
+}
+
 // --- Mostrar todos los pacientes ---
 void Menu::mostrarPacientes() {
     std::cout << "----- LISTA DE PACIENTES REGISTRADOS -----\n";
     pacientes.mostrar(); 
 }
 
-void guardarTurnoEnArchivo(Turno *turnoP) {
-    Turno turno = *turnoP;
-    const std::string RUTA_ARCHIVO = "C:\\Users\\danys\\OneDrive\\Documentos\\Espe\\Estructura de Datos\\P1P1-Datos-mainbin\\data\\Datos.txt"; // Ruta fija interna
+void guardarPacienteEnArchivo(Paciente *pacienteP) {
+    Paciente paciente = *pacienteP;
+    const std::string RUTA_ARCHIVO = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Pacientes.txt"; // Ruta fija interna
     
     std::ofstream archivo(RUTA_ARCHIVO, std::ios::app); // Modo append (añadir)
 
@@ -624,9 +675,35 @@ void guardarTurnoEnArchivo(Turno *turnoP) {
     }
 
     // Escribe los datos en el archivo (formato legible)
-    archivo << "Nombre: " << turno.getPaciente().getNombre() << "\n"
-            << "Cédula  " << turno.getPaciente().getCedula() << "\n"
-            << "Dirección " << turno.getPaciente().getDireccion() << "\n"
+    archivo << "Nombre: " << paciente.getNombre() << "\n"
+            << "Apellido: " << paciente.getApellido() << "\n"
+            << "Cédula:  " << paciente.getCedula() << "\n"
+            << "Dirección: " << paciente.getDireccion() << "\n"
+            << "Correo: " << paciente.getCorreo() << "\n"
+            << "Telefono: " << paciente.getTelefono() << "\n"
+            << "Sexo: " << paciente.getSexo() << "\n"
+            << "------------------------------\n";
+
+    archivo.close();
+    std::cout << "Paciente guardado en: " << RUTA_ARCHIVO << std::endl;
+}
+
+void guardarTurnoEnArchivo(Turno *turnoP) {
+    Turno turno = *turnoP;
+    const std::string RUTA_ARCHIVO = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Turnos.txt"; // Ruta fija interna
+    
+    std::ofstream archivo(RUTA_ARCHIVO, std::ios::app); // Modo append (añadir)
+
+    if (!archivo.is_open()) {
+        std::cerr << "Error: No se pudo abrir el archivo." << std::endl;
+        return;
+    }
+
+    // Escribe los datos en el archivo (formato legible)
+    archivo << "Nombre: " << base64_encode(turno.getPaciente().getNombre()) << "\n"
+            << "Apellido: " << turno.getPaciente().getApellido() << "\n"
+            << "Cédula:  " << turno.getPaciente().getCedula() << "\n"
+            << "Dirección: " << turno.getPaciente().getDireccion() << "\n"
             << "Correo: " << turno.getPaciente().getCorreo() << "\n"
             << "Telefono: " << turno.getPaciente().getTelefono() << "\n"
             << "Sexo: " << turno.getPaciente().getSexo() << "\n"
@@ -637,4 +714,244 @@ void guardarTurnoEnArchivo(Turno *turnoP) {
 
     archivo.close();
     std::cout << "Turno guardado en: " << RUTA_ARCHIVO << std::endl;
+}
+
+void Menu::cargarPacientesDesdeArchivo() {
+    const std::string pacienteArchivo = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Pacientes.txt";
+    std::ifstream archivo(pacienteArchivo);
+    
+    // Variables temporales para almacenar los datos
+    std::string nombre, apellido, cedula, direccion, correo, telefono, sexo;
+    std::string linea;
+
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir el archivo: " << pacienteArchivo << std::endl;
+    }
+
+    while (std::getline(archivo, linea)) {
+        if (linea.find("Nombre: ") != std::string::npos) {
+            nombre = linea.substr(8);
+            nombre.erase(std::remove(nombre.begin(), nombre.end(), ' '), nombre.end());
+        }
+        else if (linea.find("Apellido: ") != std::string::npos) {
+            apellido = linea.substr(10);
+            apellido.erase(std::remove(apellido.begin(), apellido.end(), ' '), apellido.end());
+        }
+        else if (linea.find("Cédula: ") != std::string::npos) {
+            cedula = linea.substr(8);
+            cedula.erase(std::remove(cedula.begin(), cedula.end(), ' '), cedula.end());
+        }
+        else if (linea.find("Dirección: ") != std::string::npos) {
+            direccion = linea.substr(11);
+            direccion.erase(std::remove(direccion.begin(), direccion.end(), ' '), direccion.end());
+        }
+        else if (linea.find("Correo: ") != std::string::npos) {
+            correo = linea.substr(8);
+            correo.erase(std::remove(correo.begin(), correo.end(), ' '), correo.end());
+        }
+        else if (linea.find("Telefono: ") != std::string::npos) {
+            telefono = linea.substr(10);
+            telefono.erase(std::remove(telefono.begin(), telefono.end(), ' '), telefono.end());
+        }
+        else if (linea.find("Sexo: ") != std::string::npos) {
+            sexo = linea.substr(6);
+            sexo.erase(std::remove(sexo.begin(), sexo.end(), ' '), sexo.end());
+        }
+        else if (linea.find("------------------------------") != std::string::npos) {
+            // Crear el objeto Paciente usando el constructor
+            Paciente* paciente = new Paciente(nombre, apellido, cedula, direccion, correo, telefono, sexo);
+            pacientes.agregar(paciente);
+            // Reiniciar variables para el próximo paciente
+            nombre = apellido = cedula = direccion = correo = telefono = sexo = "";
+        }
+    }
+
+    archivo.close();
+}
+
+void Menu::cargarTurnosDesdeArchivoTXT() {
+    const std::string rutaArchivo = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Turnos.txt"; // Ruta fija interna
+    std::ifstream archivo(rutaArchivo);
+    
+    // Variables temporales para almacenar los datos
+    std::string nombre, apellido, cedula, direccion, correo, telefono, sexo;
+    std::string provincia, ciudad, fechaStr, horaStr;
+    int dia, mes, anio, hora, minuto;
+    std::string linea;
+
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir el archivo: " << rutaArchivo << std::endl;
+    }
+
+    while (std::getline(archivo, linea)) {
+        if (linea.find("Nombre: ") != std::string::npos) {
+            nombre = linea.substr(8);
+            nombre.erase(std::remove(nombre.begin(), nombre.end(), ' '), nombre.end());
+        }
+        else if (linea.find("Apellido: ") != std::string::npos) {
+            apellido = linea.substr(10);
+            apellido.erase(std::remove(apellido.begin(), apellido.end(), ' '), apellido.end());
+        }
+        else if (linea.find("Cédula:  ") != std::string::npos) {
+            cedula = linea.substr(8);
+            cedula.erase(std::remove(cedula.begin(), cedula.end(), ' '), cedula.end());
+        }
+        else if (linea.find("Dirección: ") != std::string::npos) {
+            direccion = linea.substr(11);
+            direccion.erase(std::remove(direccion.begin(), direccion.end(), ' '), direccion.end());
+        }
+        else if (linea.find("Correo: ") != std::string::npos) {
+            correo = linea.substr(8);
+            correo.erase(std::remove(correo.begin(), correo.end(), ' '), correo.end());
+        }
+        else if (linea.find("Telefono: ") != std::string::npos) {
+            telefono = linea.substr(10);
+            telefono.erase(std::remove(telefono.begin(), telefono.end(), ' '), telefono.end());
+        }
+        else if (linea.find("Sexo: ") != std::string::npos) {
+            sexo = linea.substr(6);
+            sexo.erase(std::remove(sexo.begin(), sexo.end(), ' '), sexo.end());
+        }
+        else if (linea.find("Provincia: ") != std::string::npos) {
+            provincia = linea.substr(11);
+            provincia.erase(std::remove(provincia.begin(), provincia.end(), ' '), provincia.end());
+        }
+        else if (linea.find("Ciudad: ") != std::string::npos) {
+            ciudad = linea.substr(8);
+            ciudad.erase(std::remove(ciudad.begin(), ciudad.end(), ' '), ciudad.end());
+        }
+        else if (linea.find("Fecha y Hora ") != std::string::npos) {
+            std::string fechaHoraStr = linea.substr(13);
+            std::replace(fechaHoraStr.begin(), fechaHoraStr.end(), '/', ' ');
+            std::istringstream ss(fechaHoraStr);
+            ss >> dia >> mes >> anio;
+            ss.ignore(4); // Ignora " -> "
+            ss >> hora >> minuto;
+        }
+        else if (linea.find("------------------------------") != std::string::npos) {
+            // Crear objetos necesarios
+            Paciente* paciente = new Paciente(nombre, apellido, cedula, direccion, correo, telefono, sexo);
+            FechaHora fecha;
+            fecha.setFechaHora(dia, mes, anio, hora, minuto);
+            Turno* turno = new Turno(*paciente, fecha, provincia, ciudad);
+            lista.agregar(turno);
+            
+            // Reiniciar variables para el próximo turno
+            nombre = apellido = cedula = direccion = correo = telefono = sexo = "";
+            provincia = ciudad = "";
+            dia = mes = anio = hora = minuto = 0;
+        }
+    }
+
+    archivo.close();
+}
+
+void eliminarTurnoPorCedula(const std::string& cedula) {
+    // Primero leemos todos los turnos del archivo
+    const std::string rutaArchivo = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Turnos.txt"; // Ruta fija interna
+    std::ifstream archivoLectura(rutaArchivo);
+    std::vector<std::string> lineas;
+    std::string linea;
+    bool encontrado = false;
+    int inicioTurno = -1;
+
+    if (!archivoLectura.is_open()) {
+        std::cerr << "Error al abrir el archivo para lectura." << std::endl;
+        return;
+    }
+
+    // Leer todas las líneas y marcar dónde está el turno a eliminar
+    int index = 0;
+    while (std::getline(archivoLectura, linea)) {
+        lineas.push_back(linea);
+        
+        if (linea.find("Cédula  " + cedula) != std::string::npos) {
+            encontrado = true;
+            inicioTurno = index - 7; // Retrocedemos hasta el "Nombre: "
+        }
+        index++;
+    }
+    archivoLectura.close();
+
+    if (!encontrado) {
+        std::cout << "No se encontró un turno con la cédula " << cedula << std::endl;
+        return;
+    }
+
+    // Eliminar las 12 líneas que componen el turno (de Nombre a separador)
+    if (inicioTurno >= 0 && inicioTurno + 12 <= lineas.size()) {
+        lineas.erase(lineas.begin() + inicioTurno, lineas.begin() + inicioTurno + 12);
+    }
+
+    // Reescribir el archivo completo sin el turno eliminado
+    std::ofstream archivoEscritura(rutaArchivo);
+    if (!archivoEscritura.is_open()) {
+        std::cerr << "Error al abrir el archivo para escritura." << std::endl;
+        return;
+    }
+
+    for (const auto& l : lineas) {
+        archivoEscritura << l << "\n";
+    }
+    archivoEscritura.close();
+
+    std::cout << "Turno con cédula " << cedula << " eliminado correctamente." << std::endl;
+}
+
+void generarTablaHash() {
+    const std::string archivoEntrada = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Pacientes.txt";
+    const std::string archivoSalida = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
+    std::ifstream entrada(archivoEntrada);
+    std::ofstream salida(archivoSalida);
+    
+    if (!entrada.is_open()) {
+        std::cerr << "Error al abrir " << archivoEntrada << std::endl;
+        return;
+    }
+    
+    if (!salida.is_open()) {
+        std::cerr << "Error al crear " << archivoSalida << std::endl;
+        entrada.close();
+        return;
+    }
+
+    std::string linea;
+    std::string nombre;  // Variable temporal para almacenar cada nombre
+    int contador = 0;
+
+    while (std::getline(entrada, linea)) {
+        // Cuando encontramos la línea que comienza con "Nombre: "
+        if (linea.find("Nombre: ") == 0) {  // Verifica que empiece exactamente con "Nombre: "
+            nombre = linea.substr(8);
+            nombre.erase(std::remove(nombre.begin(), nombre.end(), ' '), nombre.end());
+            nombre = base64_encode(nombre);
+            
+            // Escribimos en el archivo de salida
+            salida << contador << " - " << nombre << std::endl;
+            contador++;
+            
+            while (std::getline(entrada, linea) && linea != "------------------------------") {}
+        }
+    }
+
+    entrada.close();
+    salida.close();    
+}
+
+void imprimirTablaHash() {
+    const std::string nombreArchivo = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
+    std::ifstream archivo(nombreArchivo);
+    
+    if (!archivo) {
+        std::cerr << "Error al abrir el archivo" << std::endl;
+        return;
+    }
+
+    std::cout<<"\n\t---------Tabla Hash--------\n"<<std::endl;
+    std::string linea;
+    while (std::getline(archivo, linea)) {
+        std::cout << linea << std::endl;
+    }
+
+    archivo.close();
 }

@@ -23,6 +23,7 @@ std::string Paciente::getCorreo() const { return correo; }
 std::string Paciente::getTelefono() const { return telefono; }
 std::string Paciente::getSexo() const { return sexo; }
 
+
 void Paciente::mostrar() const {
     std::cout << "Cédula     : " << cedula << "\n";
     std::cout << "Nombre     : " << nombre << " " << apellido << "\n";

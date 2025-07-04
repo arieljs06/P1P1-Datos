@@ -19,7 +19,7 @@ ListaPacientes::~ListaPacientes() {
 }
 
 void ListaPacientes::agregar(Paciente* p) {
-    if (buscarPorCedula(p->getCedula()) != nullptr) {
+    if (Paciente* existente = buscarPorCedula(p->getCedula())) {
         std::cerr << "Error: Ya existe un paciente con la cédula " << p->getCedula() << std::endl;
         delete p;
         return;

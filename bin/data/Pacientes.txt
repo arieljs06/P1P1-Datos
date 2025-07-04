@@ -1,0 +1,17 @@
+
+Nombre: Daniel
+Apellido: Estrella
+Cédula:  1752733012
+Dirección: orquideas
+Correo: daestrella8@espe.edu.ec
+Telefono: 0995545073
+Sexo: M
+------------------------------
+Nombre: Andres
+Apellido: Estrella
+Cédula:  1714900352
+Dirección: orquideas
+Correo: andresestrella26@gmail.com
+Telefono: 0995545073
+Sexo: M
+------------------------------

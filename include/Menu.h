@@ -14,6 +14,8 @@ private:
     ListaDoble lista;         ///< Lista de turnos médicos.
     ListaPacientes pacientes; ///< Lista de pacientes registrados.
 public:
+    void cargarPacientesDesdeArchivo();
+    void cargarTurnosDesdeArchivoTXT();
     void mostrarMenu();
     void agregarPaciente();
     void agregarTurno();
@@ -26,6 +28,7 @@ public:
     void cargarBackup();
     void mostrarAyuda();
     void capitalizar(std::string& nom);
+
 };
 
 #endif // MENU_H
