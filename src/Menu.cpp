@@ -24,6 +24,7 @@ void guardarPacienteEnArchivo(Paciente *);
 void eliminarTurnoPorCedula(const std::string&);
 void generarTablaHash();
 void imprimirTablaHash();
+void buscarHashEnArchivo();
 
 void Menu::mostrarMenu() {
     cargarPacientesDesdeArchivo();
@@ -39,11 +40,12 @@ void Menu::mostrarMenu() {
         "Guardar backup",
         "Cargar backup",
         "Tabla Hash",
-        "Mostra Tabla Hash"
+        "Mostrar Tabla Hash",
+        "Buscar por Hash",
         "Mostrar ayuda",
         "Salir"
     };
-    int n = 12;
+    int n = 14;
     int seleccion = 0;
     int tecla;
 
@@ -78,9 +80,11 @@ void Menu::mostrarMenu() {
                 case 6: std::cout<<"\n";mostrarPacientes(); break; 
                 case 7: std::cout<<"\n";guardarBackup(); break;
                 case 8: std::cout<<"\n";cargarBackup(); break;
-                case 9: std::cout<<"\n";generarTablaHash(); imprimirTablaHash(); break;
-                case 10: std::cout<<"\n";mostrarAyuda(); break;
-                case 11:
+                case 9: std::cout<<"\n";generarTablaHash();break;
+                case 10: std::cout<<"\n";imprimirTablaHash(); break;
+                case 11: std::cout<<"\n";buscarHashEnArchivo(); break;
+                case 12: std::cout<<"\n";mostrarAyuda(); break;
+                case 13:
                     std::cout << "Saliendo...\n";
                     return;
                 default:
@@ -260,6 +264,15 @@ void Menu::agregarTurno() {
 // --- Buscar turno ---
 void Menu::buscarTurno() {
     std::string cedula = validarNumeros("Ingrese cedula para buscar: ");
+    Turno* turnoPtr = lista.buscarPorCedula(cedula);
+    if (turnoPtr) {
+        turnoPtr->mostrar();
+    } else {
+        std::cout << "Turno no encontrado.\n";
+    }
+}
+// Sobrecarga del metodo para el hash
+void Menu::buscarTurno(std::string cedula) {
     Turno* turnoPtr = lista.buscarPorCedula(cedula);
     if (turnoPtr) {
         turnoPtr->mostrar();
@@ -700,7 +713,7 @@ void guardarTurnoEnArchivo(Turno *turnoP) {
     }
 
     // Escribe los datos en el archivo (formato legible)
-    archivo << "Nombre: " << base64_encode(turno.getPaciente().getNombre()) << "\n"
+    archivo << "Nombre: " << turno.getPaciente().getNombre() << "\n"
             << "Apellido: " << turno.getPaciente().getApellido() << "\n"
             << "Cédula:  " << turno.getPaciente().getCedula() << "\n"
             << "Dirección: " << turno.getPaciente().getDireccion() << "\n"
@@ -916,18 +929,18 @@ void generarTablaHash() {
     }
 
     std::string linea;
-    std::string nombre;  // Variable temporal para almacenar cada nombre
+    std::string cedula;  // Variable temporal para almacenar cada nombre
     int contador = 0;
 
     while (std::getline(entrada, linea)) {
         // Cuando encontramos la línea que comienza con "Nombre: "
-        if (linea.find("Nombre: ") == 0) {  // Verifica que empiece exactamente con "Nombre: "
-            nombre = linea.substr(8);
-            nombre.erase(std::remove(nombre.begin(), nombre.end(), ' '), nombre.end());
-            nombre = base64_encode(nombre);
+        if (linea.find("Cédula: ") == 0) {  // Verifica que empiece exactamente con "Nombre: "
+            cedula = linea.substr(8);
+            cedula.erase(std::remove(cedula.begin(), cedula.end(), ' '), cedula.end());
+            cedula = base64_encode(cedula);
             
             // Escribimos en el archivo de salida
-            salida << contador << " - " << nombre << std::endl;
+            salida << contador << " - " << cedula << std::endl;
             contador++;
             
             while (std::getline(entrada, linea) && linea != "------------------------------") {}
@@ -947,11 +960,109 @@ void imprimirTablaHash() {
         return;
     }
 
-    std::cout<<"\n\t---------Tabla Hash--------\n"<<std::endl;
+    std::cout<<"\n---------Tabla Hash Cedulas --------\n"<<std::endl;
     std::string linea;
     while (std::getline(archivo, linea)) {
         std::cout << linea << std::endl;
     }
 
+    std::cout<<"\n\n";
+
     archivo.close();
+}
+
+void buscarPorHash(){
+    std::string cedula="";
+    std::cout<<"Digite el hash a buscar: ";
+}   
+
+std::string base64_decode(const std::string &encoded_string) {
+    // Tabla de caracteres Base64
+    const std::string base64_chars = 
+             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+             "abcdefghijklmnopqrstuvwxyz"
+             "0123456789+/";
+    
+    std::vector<unsigned char> bytes;
+    bytes.reserve(encoded_string.size() * 3 / 4);
+    
+    int i = 0;
+    int in_len = encoded_string.size();
+    int in_ = 0;
+    unsigned char char_array_4[4], char_array_3[3];
+    
+    while (in_len-- && (encoded_string[in_] != '=')) {
+        // Convertir caracteres Base64 a valores 0-63
+        char_array_4[i++] = encoded_string[in_]; in_++;
+        if (i == 4) {
+            for (i = 0; i <4; i++)
+                char_array_4[i] = base64_chars.find(char_array_4[i]);
+            
+            // Convertir 4 caracteres Base64 a 3 bytes
+            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+            
+            for (i = 0; (i < 3); i++)
+                bytes.push_back(char_array_3[i]);
+            i = 0;
+        }
+    }
+    
+    // Manejar padding '='
+    if (i) {
+        for (int j = i; j <4; j++)
+            char_array_4[j] = 0;
+        
+        for (int j = 0; j <4; j++)
+            char_array_4[j] = base64_chars.find(char_array_4[j]);
+        
+        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+        
+        for (int j = 0; (j < i - 1); j++)
+            bytes.push_back(char_array_3[j]);
+    }
+    
+    return std::string(bytes.begin(), bytes.end());
+}
+
+void Menu::buscarHashEnArchivo() {
+    const std::string rutaArchivo = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
+    // 1. Pedir el hash al usuario
+    std::string hashBuscado;
+    std::cout << "Ingrese el hash a buscar: ";
+    std::getline(std::cin, hashBuscado);
+    
+    // Eliminar posibles espacios en blanco
+    hashBuscado.erase(std::remove(hashBuscado.begin(), hashBuscado.end(), ' '), hashBuscado.end());
+
+    // 2. Leer el archivo y cargar hashes en lista
+    std::ifstream archivo(rutaArchivo);
+    std::vector<std::string> listaHashes;
+    
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir el archivo: " << rutaArchivo << std::endl;
+    }
+
+    std::string linea;
+    while (std::getline(archivo, linea)) {
+        // Extraer solo la parte del hash (asumiendo formato "número - hash")
+        size_t separador = linea.find(" - ");
+        if (separador != std::string::npos) {
+            std::string hash = linea.substr(separador + 3);
+            listaHashes.push_back(hash);
+        }
+    }
+    archivo.close();
+
+    // 3. Buscar el hash en la lista
+    for (const auto& hash : listaHashes) {
+        if (hash == hashBuscado) {
+            std::string cedula = base64_decode(hash);
+            cedula.erase(std::remove(cedula.begin(), cedula.end(), ' '), cedula.end());
+            buscarTurno(cedula);
+        }
+    }
 }

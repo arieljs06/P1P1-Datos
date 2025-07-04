@@ -16,6 +16,8 @@ private:
 public:
     void cargarPacientesDesdeArchivo();
     void cargarTurnosDesdeArchivoTXT();
+    void buscarTurno(std::string cedula);
+    void buscarHashEnArchivo();
     void mostrarMenu();
     void agregarPaciente();
     void agregarTurno();

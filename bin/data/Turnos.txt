@@ -5,6 +5,9 @@ Dirección: orquideas
 Correo: daestrella8@espe.edu.ec
 Telefono: 0995545073
 Sexo: M
+Provincia: Pichincha
+Ciudad: Quito
+Fecha y Hora 21/11/2025 -> 10:20
 ------------------------------
 Nombre: Andres
 Apellido: Estrella
@@ -13,12 +16,7 @@ Dirección: orquideas
 Correo: andresestrella26@gmaail.com
 Telefono: 0995545073
 Sexo: M
-------------------------------
-Nombre: Viviana
-Apellido: Freire
-Cédula:  1718127192
-Dirección: orquideas
-Correo: viviana37@gmail.com
-Telefono: 0983726044
-Sexo: F
+Provincia: Azuay
+Ciudad: Cuenca
+Fecha y Hora 21/8/2025 -> 14:40
 ------------------------------
