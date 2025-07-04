@@ -17,8 +17,9 @@
 #include <iomanip>
 #include <sstream>
 #include <ctime>
+#include "Marquee.h"
 
-
+void guardarTurnoEnArchivo(Turno *); 
 
 void Menu::mostrarMenu() {
     const char *opciones[] = {
@@ -40,7 +41,7 @@ void Menu::mostrarMenu() {
 
     do {
         system("cls");
-        std::cout << "--- MENU DE TURNOS ---\n\n";
+        std::cout << "\n--- MENU DE TURNOS ---\n\n";
         for (int i = 0; i < n; ++i) {
             if (i == seleccion)
                 std::cout << " -> ";
@@ -59,16 +60,16 @@ void Menu::mostrarMenu() {
             system("cls");
             std::cout << "Opcion seleccionada: " << opciones[seleccion] << "\n";
             switch (seleccion) {
-                case 0: agregarPaciente(); break;
-                case 1: agregarTurno(); break;
-                case 2: buscarTurno(); break;
-                case 3: eliminarTurno(); break;
-                case 4: reemplazarTurno(); break;
-                case 5: mostrarTurnos(); break;
-                case 6: mostrarPacientes(); break; 
-                case 7: guardarBackup(); break;
-                case 8: cargarBackup(); break;
-                case 9: mostrarAyuda(); break;
+                case 0: std::cout<<"\n";agregarPaciente(); break;
+                case 1: std::cout<<"\n";agregarTurno(); break;
+                case 2: std::cout<<"\n";buscarTurno(); break;
+                case 3: std::cout<<"\n";eliminarTurno(); break;
+                case 4: std::cout<<"\n";reemplazarTurno(); break;
+                case 5: std::cout<<"\n";mostrarTurnos(); break;
+                case 6: std::cout<<"\n";mostrarPacientes(); break; 
+                case 7: std::cout<<"\n";guardarBackup(); break;
+                case 8: std::cout<<"\n";cargarBackup(); break;
+                case 9: std::cout<<"\n";mostrarAyuda(); break;
                 case 10:
                     std::cout << "Saliendo...\n";
                     return;
@@ -235,6 +236,7 @@ void Menu::agregarTurno() {
 
     Turno* turno = new Turno(*paciente, fecha, provincia, ciudad);
     lista.agregar(turno);
+    guardarTurnoEnArchivo(turno);
     std::cout << "Turno agregado correctamente a las " << hora << ":" << (minuto < 10 ? "0" : "") << minuto << ".\n";
 }
 
@@ -430,7 +432,7 @@ void Menu::mostrarTurnos() {
 
 void Menu::guardarBackup() {
     // Carpeta fija para los backups
-    std::string rutaBase = "C:\\Users\\Rafita Valentina\\Documents\\test\\Proyecto1.1.2P1\\bin\\backups\\";
+    std::string rutaBase = "%USERPROFILE%\\Documents\\test\\Proyecto1.1.2P1\\bin\\backups\\";
 
     // Crear la carpeta si no existe
     if (!std::filesystem::exists(rutaBase)) {
@@ -482,7 +484,7 @@ void Menu::guardarBackup() {
 }
 
 void Menu::cargarBackup() {
-    std::string rutaBase = "C:\\Users\\Rafita Valentina\\Documents\\test\\Proyecto1.1.2P1\\bin\\backups\\";
+    std::string rutaBase = "%USERPROFILE%\\Documents\\test\\Proyecto1.1.2P1\\bin\\backups\\";
 
     if (!std::filesystem::exists(rutaBase) || !std::filesystem::is_directory(rutaBase)) {
         std::cout << "La carpeta de backups no existe.\n";
@@ -608,4 +610,31 @@ void Menu::capitalizar(std::string& texto) {
 void Menu::mostrarPacientes() {
     std::cout << "----- LISTA DE PACIENTES REGISTRADOS -----\n";
     pacientes.mostrar(); 
+}
+
+void guardarTurnoEnArchivo(Turno *turnoP) {
+    Turno turno = *turnoP;
+    const std::string RUTA_ARCHIVO = "C:\\Users\\danys\\OneDrive\\Documentos\\Espe\\Estructura de Datos\\P1P1-Datos-mainbin\\data\\Datos.txt"; // Ruta fija interna
+    
+    std::ofstream archivo(RUTA_ARCHIVO, std::ios::app); // Modo append (añadir)
+
+    if (!archivo.is_open()) {
+        std::cerr << "Error: No se pudo abrir el archivo." << std::endl;
+        return;
+    }
+
+    // Escribe los datos en el archivo (formato legible)
+    archivo << "Nombre: " << turno.getPaciente().getNombre() << "\n"
+            << "Cédula  " << turno.getPaciente().getCedula() << "\n"
+            << "Dirección " << turno.getPaciente().getDireccion() << "\n"
+            << "Correo: " << turno.getPaciente().getCorreo() << "\n"
+            << "Telefono: " << turno.getPaciente().getTelefono() << "\n"
+            << "Sexo: " << turno.getPaciente().getSexo() << "\n"
+            << "Provincia: " << turno.getProvincia() << "\n"
+            << "Ciudad: " << turno.getCiudad() << "\n"
+            << "Fecha y Hora " << turno.getFechaHora().getDia() << "/" << turno.getFechaHora().getMes() << "/" << turno.getFechaHora().getAnio() << " -> " <<  turno.getFechaHora().getHora() << ":" << turno.getFechaHora().getMinuto() << "\n"
+            << "------------------------------\n";
+
+    archivo.close();
+    std::cout << "Turno guardado en: " << RUTA_ARCHIVO << std::endl;
 }
