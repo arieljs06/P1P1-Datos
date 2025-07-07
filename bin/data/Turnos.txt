@@ -1,14 +1,3 @@
-Nombre: Daniel
-Apellido: Estrella
-Cédula:  1752733012
-Dirección: orquideas
-Correo: daestrella8@espe.edu.ec
-Telefono: 0995545073
-Sexo: M
-Provincia: Pichincha
-Ciudad: Quito
-Fecha y Hora 21/11/2025 -> 10:20
-------------------------------
 Nombre: Andres
 Apellido: Estrella
 Cédula:  1714900352
@@ -18,5 +7,16 @@ Telefono: 0995545073
 Sexo: M
 Provincia: Azuay
 Ciudad: Cuenca
-Fecha y Hora 21/8/2025 -> 14:40
+Fecha y Hora 15/3/2026 -> 10:0
+------------------------------
+Nombre: Daniel
+Apellido: Estrella
+Cédula:  1752733012
+Dirección: orquideas
+Correo: daestrella8@espe.edu.ec
+Telefono: 0995545073
+Sexo: M
+Provincia: Pichincha
+Ciudad: Quito
+Fecha y Hora 23/1/2026 -> 10:0
 ------------------------------

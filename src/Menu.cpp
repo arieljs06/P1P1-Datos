@@ -22,9 +22,11 @@
 void guardarTurnoEnArchivo(Turno *); 
 void guardarPacienteEnArchivo(Paciente *);
 void eliminarTurnoPorCedula(const std::string&);
+std::string base64_encode(const std::string &);
 void generarTablaHash();
 void imprimirTablaHash();
 void buscarHashEnArchivo();
+void eliminarHashPorValor(const std::string& );
 
 void Menu::mostrarMenu() {
     cargarPacientesDesdeArchivo();
@@ -39,19 +41,17 @@ void Menu::mostrarMenu() {
         "Mostrar todos los pacientes", 
         "Guardar backup",
         "Cargar backup",
-        "Tabla Hash",
         "Mostrar Tabla Hash",
         "Buscar por Hash",
         "Mostrar ayuda",
         "Salir"
     };
-    int n = 14;
+    int n = 13;
     int seleccion = 0;
     int tecla;
 
     do {
         system("cls");
-        generarTablaHash();
         std::cout << "\n\n--- MENU DE TURNOS ---\n\n";
         for (int i = 0; i < n; ++i) {
             if (i == seleccion)
@@ -80,11 +80,10 @@ void Menu::mostrarMenu() {
                 case 6: std::cout<<"\n";mostrarPacientes(); break; 
                 case 7: std::cout<<"\n";guardarBackup(); break;
                 case 8: std::cout<<"\n";cargarBackup(); break;
-                case 9: std::cout<<"\n";generarTablaHash();break;
-                case 10: std::cout<<"\n";imprimirTablaHash(); break;
-                case 11: std::cout<<"\n";buscarHashEnArchivo(); break;
-                case 12: std::cout<<"\n";mostrarAyuda(); break;
-                case 13:
+                case 9: std::cout<<"\n";imprimirTablaHash(); break;
+                case 10: std::cout<<"\n";buscarHashEnArchivo(); break;
+                case 11: std::cout<<"\n";mostrarAyuda(); break;
+                case 12:
                     std::cout << "Saliendo...\n";
                     return;
                 default:
@@ -286,7 +285,7 @@ void Menu::eliminarTurno() {
     std::string cedula = validarNumeros("Ingrese cedula para eliminar: ");
     if (lista.eliminarPorCedula(cedula)) {
         eliminarTurnoPorCedula(cedula);
-        std::cout << "Turno eliminado.\n";
+        eliminarHashPorValor(base64_encode(cedula));
     } else {
         std::cout << "No se encontro turno con esa cedula.\n";
     }
@@ -462,7 +461,7 @@ void Menu::mostrarTurnos() {
 
 void Menu::guardarBackup() {
     // Carpeta fija para los backups
-    std::string rutaBase = "%USERPROFILE%\\Documents\\test\\Proyecto1.1.2P1\\bin\\backups\\";
+    std::string rutaBase = "bin\\backups\\";
 
     // Crear la carpeta si no existe
     if (!std::filesystem::exists(rutaBase)) {
@@ -513,9 +512,37 @@ void Menu::guardarBackup() {
     std::cout << "Backup guardado correctamente en:\n" << rutaCompleta << "\n";
 }
 
-void Menu::cargarBackup() {
-    std::string rutaBase = "%USERPROFILE%\\Documents\\test\\Proyecto1.1.2P1\\bin\\backups\\";
+void limpiarArchivo(const std::string& nombreArchivo) {
+    try {
+        // Usar filesystem para manejo correcto de rutas
+        std::filesystem::path rutaArchivo(nombreArchivo);
+        
+        // Verificar si la ruta es válida
+        if (rutaArchivo.empty()) {
+            std::cerr << "Error: Ruta de archivo vacía" << std::endl;
+            return;
+        }
 
+        // Abrir el archivo en modo truncate (borra contenido)
+        std::ofstream archivo(rutaArchivo, std::ios::binary | std::ios::trunc);
+        
+        // Verificar si se abrió correctamente
+        if (!archivo.is_open()) {
+            std::cerr << "Error: No se pudo abrir " << rutaArchivo << std::endl;
+            return;
+        }
+
+        // Forzar escritura y cierre inmediato
+        archivo.close();
+        
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Excepción al limpiar archivo: " << e.what() << std::endl;
+    }
+}
+
+void Menu::cargarBackup() {
+    std::string rutaBase = "bin\\backups\\";
     if (!std::filesystem::exists(rutaBase) || !std::filesystem::is_directory(rutaBase)) {
         std::cout << "La carpeta de backups no existe.\n";
         return;
@@ -564,7 +591,8 @@ void Menu::cargarBackup() {
     }
 
     lista = ListaDoble(); // Limpiar la lista actual
-
+    limpiarArchivo("bin\\data\\Turnos.txt");
+    limpiarArchivo("bin\\data\\Tabla-Hash.txt");
     while (archivo.peek() != EOF) {
         FechaHora fecha;
         archivo.read(reinterpret_cast<char*>(&fecha), sizeof(FechaHora));
@@ -584,6 +612,7 @@ void Menu::cargarBackup() {
         Paciente* p = new Paciente(nombre, apellido, cedula, direccion, correo, telefono, sexo);
         Turno* t = new Turno(*p, fecha, provincia, ciudad);
         lista.agregar(t);
+        guardarTurnoEnArchivo(t);
 
         if (!pacientes.buscarPorCedula(cedula)) {
             pacientes.agregar(new Paciente(nombre, apellido, cedula, direccion, correo, telefono, sexo));
@@ -591,6 +620,7 @@ void Menu::cargarBackup() {
     }
 
     archivo.close();
+    generarTablaHash();
     std::cout << "Backup restaurado correctamente desde: " << archivoElegido << "\n";
 }
 
@@ -678,7 +708,7 @@ void Menu::mostrarPacientes() {
 
 void guardarPacienteEnArchivo(Paciente *pacienteP) {
     Paciente paciente = *pacienteP;
-    const std::string RUTA_ARCHIVO = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Pacientes.txt"; // Ruta fija interna
+    const std::string RUTA_ARCHIVO = "bin\\data\\Pacientes.txt"; // Ruta fija interna
     
     std::ofstream archivo(RUTA_ARCHIVO, std::ios::app); // Modo append (añadir)
 
@@ -703,7 +733,7 @@ void guardarPacienteEnArchivo(Paciente *pacienteP) {
 
 void guardarTurnoEnArchivo(Turno *turnoP) {
     Turno turno = *turnoP;
-    const std::string RUTA_ARCHIVO = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Turnos.txt"; // Ruta fija interna
+    const std::string RUTA_ARCHIVO = "bin\\data\\Turnos.txt"; // Ruta fija interna
     
     std::ofstream archivo(RUTA_ARCHIVO, std::ios::app); // Modo append (añadir)
 
@@ -726,11 +756,10 @@ void guardarTurnoEnArchivo(Turno *turnoP) {
             << "------------------------------\n";
 
     archivo.close();
-    std::cout << "Turno guardado en: " << RUTA_ARCHIVO << std::endl;
 }
 
 void Menu::cargarPacientesDesdeArchivo() {
-    const std::string pacienteArchivo = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Pacientes.txt";
+    const std::string pacienteArchivo = "bin\\data\\Pacientes.txt";
     std::ifstream archivo(pacienteArchivo);
     
     // Variables temporales para almacenar los datos
@@ -782,8 +811,55 @@ void Menu::cargarPacientesDesdeArchivo() {
     archivo.close();
 }
 
+void eliminarHashPorValor(const std::string& hashBuscado) {
+    const std::string rutaArchivo = "bin\\data\\Tabla-Hash.txt"; // Ajusta la ruta según tu necesidad
+    std::ifstream archivoLectura(rutaArchivo);
+    std::vector<std::string> lineas;
+    std::string linea;
+    bool encontrado = false;
+
+    if (!archivoLectura.is_open()) {
+        std::cerr << "Error al abrir el archivo para lectura." << std::endl;
+        return;
+    }
+
+    // Leer todas las líneas y buscar el hash
+    while (std::getline(archivoLectura, linea)) {
+        if (linea.find(hashBuscado) != std::string::npos) {
+            encontrado = true;
+            continue; // Saltamos esta línea (la eliminamos)
+        }
+        lineas.push_back(linea);
+    }
+    archivoLectura.close();
+
+    if (!encontrado) {
+        std::cout << "No se encontró el hash " << hashBuscado << std::endl;
+        return;
+    }
+
+    // Reescribir el archivo con las líneas restantes (renumerando)
+    std::ofstream archivoEscritura(rutaArchivo, std::ios::out | std::ios::trunc);
+    if (!archivoEscritura.is_open()) {
+        std::cerr << "Error al abrir el archivo para escritura." << std::endl;
+        return;
+    }
+
+    int nuevoIndice = 0;
+    for (const auto& linea : lineas) {
+        // Extraemos el hash (asumiendo formato "índice - hash")
+        size_t guionPos = linea.find(" - ");
+        if (guionPos != std::string::npos) {
+            std::string hash = linea.substr(guionPos + 3);
+            archivoEscritura << nuevoIndice << " - " << hash << "\n";
+            nuevoIndice++;
+        }
+    }
+    archivoEscritura.close();
+}
+
 void Menu::cargarTurnosDesdeArchivoTXT() {
-    const std::string rutaArchivo = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Turnos.txt"; // Ruta fija interna
+    const std::string rutaArchivo = "bin\\data\\Turnos.txt"; // Ruta fija interna
     std::ifstream archivo(rutaArchivo);
     
     // Variables temporales para almacenar los datos
@@ -860,8 +936,7 @@ void Menu::cargarTurnosDesdeArchivoTXT() {
 }
 
 void eliminarTurnoPorCedula(const std::string& cedula) {
-    // Primero leemos todos los turnos del archivo
-    const std::string rutaArchivo = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Turnos.txt"; // Ruta fija interna
+    const std::string rutaArchivo = "bin\\data\\Turnos.txt";
     std::ifstream archivoLectura(rutaArchivo);
     std::vector<std::string> lineas;
     std::string linea;
@@ -873,14 +948,15 @@ void eliminarTurnoPorCedula(const std::string& cedula) {
         return;
     }
 
-    // Leer todas las líneas y marcar dónde está el turno a eliminar
+    // Leer todas las líneas
     int index = 0;
     while (std::getline(archivoLectura, linea)) {
         lineas.push_back(linea);
         
-        if (linea.find("Cédula  " + cedula) != std::string::npos) {
+        // Buscar la cédula con DOS espacios después de "Cédula:"
+        if (linea.find("Cédula:  " + cedula) != std::string::npos) {
             encontrado = true;
-            inicioTurno = index - 7; // Retrocedemos hasta el "Nombre: "
+            inicioTurno = index - 2; // Retroceder 2 líneas hasta el "Nombre:"
         }
         index++;
     }
@@ -891,13 +967,16 @@ void eliminarTurnoPorCedula(const std::string& cedula) {
         return;
     }
 
-    // Eliminar las 12 líneas que componen el turno (de Nombre a separador)
-    if (inicioTurno >= 0 && inicioTurno + 12 <= lineas.size()) {
-        lineas.erase(lineas.begin() + inicioTurno, lineas.begin() + inicioTurno + 12);
+    // Eliminar las 11 líneas que componen el turno
+    if (inicioTurno >= 0 && inicioTurno + 11 <= lineas.size()) {
+        lineas.erase(lineas.begin() + inicioTurno, lineas.begin() + inicioTurno + 11);
+    } else {
+        std::cerr << "Error: Índices de turno inválidos." << std::endl;
+        return;
     }
 
-    // Reescribir el archivo completo sin el turno eliminado
-    std::ofstream archivoEscritura(rutaArchivo);
+    // Reescribir el archivo
+    std::ofstream archivoEscritura(rutaArchivo, std::ios::out | std::ios::trunc);
     if (!archivoEscritura.is_open()) {
         std::cerr << "Error al abrir el archivo para escritura." << std::endl;
         return;
@@ -912,8 +991,8 @@ void eliminarTurnoPorCedula(const std::string& cedula) {
 }
 
 void generarTablaHash() {
-    const std::string archivoEntrada = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Pacientes.txt";
-    const std::string archivoSalida = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
+    const std::string archivoEntrada = "bin\\data\\Turnos.txt";
+    const std::string archivoSalida = "bin\\data\\Tabla-Hash.txt";
     std::ifstream entrada(archivoEntrada);
     std::ofstream salida(archivoSalida);
     
@@ -952,7 +1031,8 @@ void generarTablaHash() {
 }
 
 void imprimirTablaHash() {
-    const std::string nombreArchivo = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
+    generarTablaHash();
+    const std::string nombreArchivo = "bin\\data\\Tabla-Hash.txt";
     std::ifstream archivo(nombreArchivo);
     
     if (!archivo) {
@@ -969,12 +1049,7 @@ void imprimirTablaHash() {
     std::cout<<"\n\n";
 
     archivo.close();
-}
-
-void buscarPorHash(){
-    std::string cedula="";
-    std::cout<<"Digite el hash a buscar: ";
-}   
+}  
 
 std::string base64_decode(const std::string &encoded_string) {
     // Tabla de caracteres Base64
@@ -1029,7 +1104,8 @@ std::string base64_decode(const std::string &encoded_string) {
 }
 
 void Menu::buscarHashEnArchivo() {
-    const std::string rutaArchivo = "C:\\Users\\danys\\Documents\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
+    generarTablaHash();
+    const std::string rutaArchivo = "bin\\data\\Tabla-Hash.txt";
     // 1. Pedir el hash al usuario
     std::string hashBuscado;
     std::cout << "Ingrese el hash a buscar: ";
