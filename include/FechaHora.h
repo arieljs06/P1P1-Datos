@@ -10,6 +10,7 @@ private:
     int dia, mes, anio, hora, minuto;
 public:
     FechaHora();
+    FechaHora(const std::string& fecha, const std::string& hora);
     FechaHora(int d, int m, int a, int h, int min);
 
     void setFechaHora(int d, int m, int a, int h, int min);

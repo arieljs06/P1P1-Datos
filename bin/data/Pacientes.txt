@@ -22,3 +22,35 @@ Correo: viviana37@gmail.com
 Telefono: 0983726044
 Sexo: F
 ------------------------------
+Nombre: Ariel
+Apellido: Juarez
+Cédula:  1724566086
+Dirección: asdfa
+Correo: arie@gmal.com
+Telefono: 0978609584
+Sexo: M
+------------------------------
+Nombre: Ariel
+Apellido: Hernandez
+Cédula:  0103210373
+Dirección: aqui
+Correo: et.juars@gmail.com
+Telefono: 0996915664
+Sexo: M
+------------------------------
+Nombre: Gladys Solsis
+Apellido: Sois
+Cédula:  0101707867
+Dirección: aasdf
+Correo: glasol@gmail.com
+Telefono: 0999999999
+Sexo: F
+------------------------------
+Nombre: Adri
+Apellido: Jua
+Cédula:  1724566094
+Dirección: sadf
+Correo: asr@gma.com
+Telefono: 0999999999
+Sexo: M
+------------------------------

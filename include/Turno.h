@@ -26,7 +26,7 @@ public:
     void setProvincia(const std::string& prov);
     void setCiudad(const std::string& ciu);
 
-    Paciente getPaciente() const;
+    const Paciente& getPaciente() const;
     FechaHora getFechaHora() const;
     std::string getProvincia() const;
     std::string getCiudad() const;

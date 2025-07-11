@@ -7,6 +7,10 @@
 Turno::Turno(Paciente p, FechaHora f, const std::string& prov, const std::string& ciu)
     : paciente(p), fechaHora(f), provincia(prov), ciudad(ciu) {}
 
+Turno::Turno()
+    : paciente(), fechaHora(), provincia(""), ciudad("") {}
+
+
 void Turno::setPaciente(const Paciente& p) {
     paciente = p;
 }
@@ -23,9 +27,10 @@ void Turno::setCiudad(const std::string& ciu) {
     ciudad = ciu;
 }
 
-Paciente Turno::getPaciente() const {
+const Paciente& Turno::getPaciente() const {
     return paciente;
 }
+
 
 FechaHora Turno::getFechaHora() const {
     return fechaHora;

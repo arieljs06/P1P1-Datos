@@ -9,6 +9,8 @@
 #include "Turno.h"
 #include "Paciente.h"
 
+
+
 class Menu {
 private:
     ListaDoble lista;         ///< Lista de turnos médicos.
@@ -30,6 +32,8 @@ public:
     void cargarBackup();
     void mostrarAyuda();
     void capitalizar(std::string& nom);
+    void moduloArbolTurnos();
+    void cargarTurnosEnArbol();
 
 };
 

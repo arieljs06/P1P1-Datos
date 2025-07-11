@@ -10,7 +10,12 @@ FechaHora::FechaHora() : dia(0), mes(0), anio(0), hora(0), minuto(0) {}
 
 FechaHora::FechaHora(int d, int m, int a, int h, int min)
     : dia(d), mes(m), anio(a), hora(h), minuto(min) {}
-
+    
+FechaHora::FechaHora(const std::string& fechaStr, const std::string& horaStr) {
+    // Suponiendo formato "YYYY-MM-DD" y "HH:MM"
+    sscanf(fechaStr.c_str(), "%d-%d-%d", &anio, &mes, &dia);
+    sscanf(horaStr.c_str(), "%d:%d", &hora, &minuto);
+}
 void FechaHora::setFechaHora(int d, int m, int a, int h, int min) {
     
     dia = d;

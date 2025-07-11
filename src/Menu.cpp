@@ -1,10 +1,3 @@
-#include "Menu.h"
-#include "EntradaDatos.h"
-#include "ValidacionFecha.h"
-#include "FechaHora.h"
-#include "Paciente.h"
-#include "listaDoble.h"
-#include "ListaPacientes.h"
 #include <iostream>
 #include <fstream>
 #include <conio.h>
@@ -16,8 +9,20 @@
 #include <windows.h>
 #include <iomanip>
 #include <sstream>
+#include <sstream>
 #include <ctime>
+#include "Menu.h"
+#include "EntradaDatos.h"
+#include "ValidacionFecha.h"
+#include "FechaHora.h"
+#include "Paciente.h"
+#include "listaDoble.h"
+#include "ListaPacientes.h"
+#include "RedBlackTree.h"
 #include "Marquee.h"
+#include "qrcodegen.hpp"
+
+extern ArbolRojoNegro arbolTurnos;
 
 void guardarTurnoEnArchivo(Turno *); 
 void guardarPacienteEnArchivo(Paciente *);
@@ -27,6 +32,8 @@ void generarTablaHash();
 void imprimirTablaHash();
 void buscarHashEnArchivo();
 void eliminarHashPorValor(const std::string& );
+static void generateQRCodeFromString(const std::string &);
+
 
 void Menu::mostrarMenu() {
     cargarPacientesDesdeArchivo();
@@ -43,10 +50,11 @@ void Menu::mostrarMenu() {
         "Cargar backup",
         "Mostrar Tabla Hash",
         "Buscar por Hash",
-        "Mostrar ayuda",
+        "Modulo Arbol de Turnos",
+        "Mostar Ayuda",
         "Salir"
     };
-    int n = 13;
+    int n = 14;
     int seleccion = 0;
     int tecla;
 
@@ -82,8 +90,9 @@ void Menu::mostrarMenu() {
                 case 8: std::cout<<"\n";cargarBackup(); break;
                 case 9: std::cout<<"\n";imprimirTablaHash(); break;
                 case 10: std::cout<<"\n";buscarHashEnArchivo(); break;
-                case 11: std::cout<<"\n";mostrarAyuda(); break;
-                case 12:
+                case 11: std::cout<<"\n";moduloArbolTurnos(); break;
+                case 12: std::cout<<"\n";mostrarAyuda(); break;
+                case 13:
                     std::cout << "Saliendo...\n";
                     return;
                 default:
@@ -160,6 +169,44 @@ void Menu::agregarTurno() {
 
     std::string provincia = validarProvincia("Ingrese provincia: ");
     std::string ciudad = validarCiudad("Ingrese ciudad: ", provincia.c_str());
+
+    // Bucle para reintentar si la dirección no es válida
+    bool direccionValida = false;
+    std::string calles;
+    std::string direccionCompleta;
+
+    while (!direccionValida) {
+        // Solicitar calles específicas o referencia
+        std::cout << "Ingrese calles o referencia exacta (ej. Av. America y Mariana de Jesús): ";
+        std::getline(std::cin >> std::ws, calles);
+
+        // Construir dirección completa
+        direccionCompleta = calles + ", " + ciudad + ", " + provincia;
+
+        // Ejecutar el script de Python
+        std::string comandoPython = "python bin\\buscar_centros.py \"" + direccionCompleta + "\"";
+        std::cout << "\nBuscando centros médicos cercanos a:\n" << direccionCompleta << "\n\n";
+        
+        int resultado = system(comandoPython.c_str());
+        
+        // Verificar si la dirección fue válida (código de retorno 0 = éxito)
+        if (resultado == 0) {
+            direccionValida = true;
+        } else {
+            std::cout << "\n----------------------------------------\n";
+            std::cout << "¿Desea intentar con otra dirección? (s/n): ";
+            
+            char opcion;
+            std::cin >> opcion;
+            std::cin.ignore(); // Limpiar el buffer
+            
+            if (tolower(opcion) != 's') {
+                break; // Salir del bucle si el usuario no quiere reintentar
+            }
+        }
+    }
+
+    std::cout << "\n----------------------------------------\n\n";
 
     int dia = -1, mes = -1, anio = -1;
     FechaHora fecha;
@@ -256,7 +303,17 @@ void Menu::agregarTurno() {
     Turno* turno = new Turno(*paciente, fecha, provincia, ciudad);
     lista.agregar(turno);
     guardarTurnoEnArchivo(turno);
+    arbolTurnos.insertarTurno(turno);
     std::cout << "Turno agregado correctamente a las " << hora << ":" << (minuto < 10 ? "0" : "") << minuto << ".\n";
+    std::string datosQr = "Nombre: " + paciente->getNombre() + "\n"
+                          "Apellido: " + paciente->getApellido() + "\n"
+                          "Cédula: " + paciente->getCedula() + "\n"
+                          "Fecha: " + std::to_string(fecha.getDia()) + "/" + std::to_string(fecha.getMes()) + "/" + std::to_string(fecha.getAnio()) + "\n"
+                          "Hora: " + std::to_string(hora) + ":" + std::to_string(minuto) + "\n"
+                          "Provincia: " + provincia + "\n"
+                          "Ciudad: " + ciudad;
+    std::cout << "Turno agregado correctamente a las " << hora << ":" << (minuto < 10 ? "0" : "") << minuto << ".\n";
+    generateQRCodeFromString(datosQr);
 }
 
 
@@ -293,98 +350,138 @@ void Menu::eliminarTurno() {
 
 
 void Menu::reemplazarTurno() {
+    // 1. Pedir cédula y comprobar turno existente
     std::string cedula = validarCedula("Ingrese cédula del turno a reemplazar: ");
-    Turno* turnoPtr = lista.buscarPorCedula(cedula);
-    if (!turnoPtr) {
-        std::cout << "No se encontró turno con esa cédula.\n";
+    Paciente* paciente = pacientes.buscarPorCedula(cedula);
+    Turno* turnoExistente = lista.buscarPorCedula(cedula);
+    if (!paciente) {
+        std::cout << "No existe un paciente con esa cédula.\n";
+        return;
+    }
+    if (!turnoExistente) {
+        std::cout << "No hay un turno asignado a esa cédula.\n";
         return;
     }
 
-    // Eliminar el turno existente
-    lista.eliminarPorCedula(cedula);
+    // 2. Pedir ubicación (igual que en agregarTurno)
+    std::string provincia = validarProvincia("Ingrese provincia: ");
+    std::string ciudad   = validarCiudad("Ingrese ciudad: ", provincia.c_str());
 
-    std::cout << "Ingrese los nuevos datos:\n";
+    bool direccionValida = false;
+    std::string calles, direccionCompleta;
+    while (!direccionValida) {
+        std::cout << "Ingrese calles o referencia exacta (ej. Av. América y Mariana de Jesús): ";
+        std::getline(std::cin >> std::ws, calles);
+        direccionCompleta = calles + ", " + ciudad + ", " + provincia;
 
-    std::string provincia = validarProvincia("Ingrese nueva provincia: ");
-    std::string ciudad = validarCiudad("Ingrese nueva ciudad: ", provincia.c_str());
+        std::string comando = "python bin\\buscar_centros.py \"" + direccionCompleta + "\"";
+        if (system(comando.c_str()) == 0) {
+            direccionValida = true;
+        } else {
+            std::cout << "Dirección no válida. ¿Reintentar? (s/n): ";
+            char op; std::cin >> op; std::cin.ignore();
+            if (tolower(op) != 's') break;
+        }
+    }
+    std::cout << "\n";
 
-    int dia = -1, mes = -1, anio = -1, hora = -1, minuto = -1;
+    // 3. Pedir fecha y hora disponible (igual que en agregarTurno)
+    int dia, mes, anio;
     FechaHora fecha;
     do {
+        // Año
         do {
-            std::string input = validarNumeros("Ingrese año (>=2024): ");
-            try {
-                anio = std::stoi(input);
-                if (!validarYear(anio) || anio < 2024) {
-                    std::cout << "Error: El año debe ser 2024 o mayor.\n";
-                    anio = -1;
-                }
-            } catch (...) {
-                std::cout << "Error: Ingrese solo números.\n";
+            std::string in = validarNumeros("Ingrese año: ");
+            anio = std::stoi(in);
+            if (!validarYear(anio) || anio < 2024) {
+                std::cout << "Error: el año debe ser 2024 o mayor.\n";
                 anio = -1;
             }
         } while (anio == -1);
 
+        // Mes
         do {
-            std::string input = validarNumeros("Ingrese mes (1-12): ");
-            try {
-                mes = std::stoi(input);
-                if (!validarMes(mes)) {
-                    std::cout << "Error: El mes debe estar entre 1 y 12.\n";
-                    mes = -1;
-                }
-            } catch (...) {
-                std::cout << "Error: Ingrese solo números.\n";
+            std::string in = validarNumeros("Ingrese mes (1-12): ");
+            mes = std::stoi(in);
+            if (!validarMes(mes)) {
+                std::cout << "Error: mes inválido.\n";
                 mes = -1;
             }
         } while (mes == -1);
 
+        // Día
         do {
-            std::string input = validarNumeros("Ingrese el día (1-31): ");
-            try {
-                dia = std::stoi(input);
-                if (!validarDia(dia, mes, anio)) {
-                    std::cout << "Día inválido para ese mes y año.\n";
-                    dia = -1;
-                }
-            } catch (...) {
-                std::cout << "Error: Ingrese solo números.\n";
+            std::string in = validarNumeros("Ingrese día (1-31): ");
+            dia = std::stoi(in);
+            if (!validarDia(dia, mes, anio)) {
+                std::cout << "Día inválido para ese mes y año.\n";
                 dia = -1;
             }
         } while (dia == -1);
 
         fecha.setFechaHora(dia, mes, anio, 0, 0);
-        if (fecha.esNoValida()) {
+        if (fecha.esNoValida())
             std::cout << "Fecha inválida: ya pasó o es feriado.\n";
-        }
     } while (fecha.esNoValida());
 
-    hora = validarHora("Ingrese la hora (0-23): ");
-    minuto = validarMinuto("Ingrese el minuto (0-59): ");
+    auto disponibles = lista.franjasDisponibles(provincia, ciudad, dia, mes, anio);
+    if (disponibles.empty()) {
+        std::cout << "No hay franjas disponibles para esa fecha.\n";
+        return;
+    }
+
+    std::cout << "Franjas disponibles:\n";
+    const int maxPorFila = 5;
+    for (size_t i = 0; i < disponibles.size(); ++i) {
+        auto [h, m] = disponibles[i];
+        std::cout << std::setw(2) << std::right << i + 1 << ". " 
+                << std::setw(2) << std::setfill('0') << h << ":" 
+                << std::setw(2) << std::setfill('0') << m << "\t";
+        if ((i + 1) % maxPorFila == 0) {
+            std::cout << std::endl;
+        }
+    }
+    if (disponibles.size() % maxPorFila != 0) {
+        std::cout << std::endl;
+    }
+
+    int opcion = -1;
+    do {
+        std::string input = validarNumeros("Seleccione una franja disponible (número): ");
+        try {
+            opcion = std::stoi(input);
+            if (opcion < 1 || opcion > disponibles.size()) {
+                std::cout << "Opción fuera de rango.\n";
+                opcion = -1;
+            }
+        } catch (...) {
+            std::cout << "Opción inválida.\n";
+            opcion = -1;
+        }
+    } while (opcion == -1);
+
+    int hora = disponibles[opcion - 1].first;
+    int minuto = disponibles[opcion - 1].second;
     fecha.setFechaHora(dia, mes, anio, hora, minuto);
 
-    if (fecha.esNoValida()) {
-        std::cout << "Fecha y hora inválida: ya pasó.\n";
-        return;
-    }
+    // 4. Eliminar el turno antiguo (lista, archivo, hash)
+    lista.eliminarPorCedula(cedula);
+    eliminarTurnoPorCedula(cedula);
+    eliminarHashPorValor(base64_encode(cedula));
 
-    if (lista.existeTurno(dia, mes, anio, hora, minuto, provincia, ciudad)) {
-        std::cout << "Ya existe un turno en esa fecha, hora y provincia.\n";
-        return;
-    }
-
-    // Crear un nuevo turno con los datos actualizados
-    Paciente* pacienteExistente = pacientes.buscarPorCedula(cedula);
-    if (!pacienteExistente) {
-        std::cout << "Error: El paciente no existe.\n";
-        return;
-    }
-
-    Turno* nuevoTurno = new Turno(*pacienteExistente, fecha, provincia, ciudad);
+    // 5. Crear e insertar el nuevo turno
+    Turno* nuevoTurno = new Turno(*paciente, fecha, provincia, ciudad);
     lista.agregar(nuevoTurno);
+    guardarTurnoEnArchivo(nuevoTurno);
+    arbolTurnos.insertarTurno(nuevoTurno);
 
-    std::cout << "Datos del turno reemplazados correctamente.\n";
+    std::cout << "Turno reemplazado correctamente para las "
+              << std::setw(2) << std::setfill('0') << hora << ":"
+              << std::setw(2) << std::setfill('0') << minuto << ".\n";
 }
+
+
+
 
 void Menu::mostrarTurnos() {
     std::vector<Turno*> turnos;
@@ -626,33 +723,19 @@ void Menu::cargarBackup() {
 
 // --- Mostrar ayuda ---
 void Menu::mostrarAyuda() {
-    const char* ayuda =
-        "----- AYUDA DEL SISTEMA DE TURNOS MEDICOS -----\n\n"
-        "1. Agregar paciente:\n"
-        "   Registra los datos de un paciente.\n\n"
-        "2. Agregar turno:\n"
-        "   Solo para pacientes ya registrados.\n\n"
-        "3. Buscar turno:\n"
-        "   Busca un turno por cédula.\n\n"
-        "4. Eliminar turno:\n"
-        "   Elimina un turno por cédula.\n\n"
-        "5. Reemplazar turno:\n"
-        "   Cambia la fecha, hora, provincia o ciudad de un turno.\n\n"
-        "6. Mostrar todos los turnos:\n"
-        "   Lista todos los turnos agendados.\n\n"
-        "7. Guardar backup:\n"
-        "   Guarda todos los turnos y pacientes en un archivo .bin.\n\n"
-        "8. Cargar backup:\n"
-        "   Recupera los turnos y pacientes desde un archivo .bin.\n\n"
-        "9. Salir:\n"
-        "   Cierra el programa.";
 
-    MessageBoxA(
+    std::string rutaAyuda = "bin\\CitasMedicas.chm";
+    HINSTANCE result = ShellExecuteA(
         NULL,
-        ayuda,
-        "Ayuda del Sistema de Turnos Médicos",
-        MB_OK | MB_ICONINFORMATION
+        "open",
+        "hh.exe", // Llama explícitamente al visor de ayuda de Windows
+        rutaAyuda.c_str(),
+        NULL,
+        SW_SHOWNORMAL
     );
+    if ((INT_PTR)result <= 32) {
+        std::cerr << "No se pudo abrir el archivo de ayuda." << std::endl;
+    }
 }
 
 // --- Capitalizar nombres ---
@@ -812,7 +895,7 @@ void Menu::cargarPacientesDesdeArchivo() {
 }
 
 void eliminarHashPorValor(const std::string& hashBuscado) {
-    const std::string rutaArchivo = "bin\\data\\Tabla-Hash.txt"; // Ajusta la ruta según tu necesidad
+    const std::string rutaArchivo = "bin\\data\\Tabla-Hash.txt"; 
     std::ifstream archivoLectura(rutaArchivo);
     std::vector<std::string> lineas;
     std::string linea;
@@ -827,7 +910,7 @@ void eliminarHashPorValor(const std::string& hashBuscado) {
     while (std::getline(archivoLectura, linea)) {
         if (linea.find(hashBuscado) != std::string::npos) {
             encontrado = true;
-            continue; // Saltamos esta línea (la eliminamos)
+            continue; 
         }
         lineas.push_back(linea);
     }
@@ -838,7 +921,7 @@ void eliminarHashPorValor(const std::string& hashBuscado) {
         return;
     }
 
-    // Reescribir el archivo con las líneas restantes (renumerando)
+    
     std::ofstream archivoEscritura(rutaArchivo, std::ios::out | std::ios::trunc);
     if (!archivoEscritura.is_open()) {
         std::cerr << "Error al abrir el archivo para escritura." << std::endl;
@@ -847,7 +930,6 @@ void eliminarHashPorValor(const std::string& hashBuscado) {
 
     int nuevoIndice = 0;
     for (const auto& linea : lineas) {
-        // Extraemos el hash (asumiendo formato "índice - hash")
         size_t guionPos = linea.find(" - ");
         if (guionPos != std::string::npos) {
             std::string hash = linea.substr(guionPos + 3);
@@ -1140,5 +1222,149 @@ void Menu::buscarHashEnArchivo() {
             cedula.erase(std::remove(cedula.begin(), cedula.end(), ' '), cedula.end());
             buscarTurno(cedula);
         }
+    }
+}
+
+void Menu::cargarTurnosEnArbol() {
+const std::string ruta = "bin/data/Turnos.txt";
+    std::ifstream archivo(ruta);
+    if (!archivo.is_open()) {
+        std::cerr << "No se pudo abrir " << ruta << "\n";
+        return;
+    }
+
+    std::string linea;
+    while (std::getline(archivo, linea)) {
+        if (linea.rfind("Nombre: ", 0) != 0) 
+            continue;
+
+        // 1. Nombre
+        std::string nombre  = linea.substr(8);
+
+        // 2. Apellido
+        std::getline(archivo, linea);
+        std::string apellido = linea.substr(10);
+
+        // 3. Cédula
+        std::getline(archivo, linea);
+        std::string cedula = linea.substr(9);
+        cedula.erase(0, cedula.find_first_not_of(" \t"));
+        cedula.erase(cedula.find_last_not_of(" \t") + 1);
+
+        // 4. Dirección
+        std::getline(archivo, linea);
+        std::string direccion = linea.substr(11);
+
+        // 5. Correo
+        std::getline(archivo, linea);
+        std::string correo = linea.substr(8);
+
+        // 6. Teléfono
+        std::getline(archivo, linea);
+        std::string telefono = linea.substr(10);
+
+        // 7. Sexo
+        std::getline(archivo, linea);
+        std::string sexo = linea.substr(6);
+
+        // 8. Provincia
+        std::getline(archivo, linea);
+        std::string provincia = linea.substr(11);
+
+        // 9. Ciudad
+        std::getline(archivo, linea);
+        std::string ciudad = linea.substr(8);
+
+        // 10. Fecha y Hora
+        std::getline(archivo, linea);
+        std::string fh = linea.substr(13); 
+        int d, m, a, h, min; char sep;
+        std::stringstream ss(fh);
+        ss >> d >> sep >> m >> sep >> a;
+        ss.ignore(4);
+        ss >> h >> sep >> min;
+
+        // 11. Separador de bloque
+        std::getline(archivo, linea);
+
+        // Construcción de objetos
+        Paciente* p = new Paciente(nombre, apellido, cedula,
+                                   direccion, correo, telefono, sexo);
+        FechaHora fecha;
+        fecha.setFechaHora(d, m, a, h, min);
+
+        Turno* turno = new Turno(*p, fecha, provincia, ciudad);
+        lista.agregar(turno);
+        arbolTurnos.insertarTurno(turno);
+    }
+
+    archivo.close();
+
+}
+
+void Menu::moduloArbolTurnos() {
+    int opcion;
+    do {
+        system("cls");
+        std::cout << "\n----- MODULO ARBOL DE TURNOS -----\n";
+        std::cout << "1. Buscar turno por cedula (arbol)\n";
+        std::cout << "2. Mostrar arbol\n";
+        std::cout << "3. Volver al menu principal\n";
+        std::cout << "Seleccione una opcion: ";
+        std::cin >> opcion;
+        std::cin.ignore();
+
+        switch (opcion) {
+            case 1: {
+                std::string cedula = validarCedula("Ingrese cedula a buscar: ");
+                NodoArbol* resultado = arbolTurnos.buscarPorCedula(cedula);
+                if (resultado && resultado->cedula == cedula) {
+                    resultado->turno->mostrar();
+                } else {
+                    std::cout << "Turno no encontrado en el arbol.\n";
+                }
+                break;
+            }
+            case 2:
+                arbolTurnos.imprimir();
+                break;
+            case 3:
+                return;
+            default:
+                std::cout << "Opcion invalida.\n";
+        }
+        system("pause");
+    } while (opcion != 5);
+}
+
+using std::uint8_t;
+using qrcodegen::QrCode;
+using qrcodegen::QrSegment;
+
+static void printQRHighContrast(const QrCode &qr) {
+    int border = 1;
+    for (int y = -border; y < qr.getSize() + border; y++) {
+        for (int x = -border; x < qr.getSize() + border; x++) {
+            // Módulos activos (1) = blanco ("  "), inactivos (0) = negro ("██")
+            std::cout << (qr.getModule(x, y) ? "  " : "██");
+        }
+        std::cout << std::endl;
+    }
+}
+
+static void generateQRCodeFromString(const std::string &text) {
+
+    if (text.empty()) {
+        std::cout << "Error: El texto a codificar está vacío.\n";
+        return;
+    }
+
+    try {
+        const QrCode qr = QrCode::encodeText(text.c_str(), QrCode::Ecc::MEDIUM);        
+        // Mostramos el QR con fondo negro y módulos blancos
+        printQRHighContrast(qr);
+
+    } catch (const qrcodegen::data_too_long &e) {
+        std::cout << "\nError: Texto demasiado largo. Intente con menos caracteres.\n\n";
     }
 }

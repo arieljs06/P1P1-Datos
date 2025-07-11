@@ -3,8 +3,10 @@
 #ifdef _WIN32
 #include <windows.h>
 #include "Marquee.h"
+#include "RedBlackTree.h"
 #endif
 
+ArbolRojoNegro arbolTurnos;
 
 int main() {
     #ifdef _WIN32
@@ -14,6 +16,7 @@ int main() {
     Marquee marquee;
     marquee.start("  Universidad de Las Fuerzas Armadas \"ESPE\"  ");
     Menu menu;
+    menu.cargarTurnosEnArbol();
     menu.mostrarMenu();
     return 0;
 }

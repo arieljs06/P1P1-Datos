@@ -22,6 +22,7 @@ private:
     std::string sexo;
     Turno* turno;
 public:
+    Paciente();
     Paciente(const std::string& nombre, const std::string& apellido, const std::string& cedula,
              const std::string& direccion, const std::string& correo,
              const std::string& telefono, const std::string& sexo);

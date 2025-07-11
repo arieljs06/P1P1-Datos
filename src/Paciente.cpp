@@ -10,6 +10,11 @@ Paciente::Paciente(const std::string& nombre, const std::string& apellido, const
     : nombre(nombre), apellido(apellido), cedula(cedula), direccion(direccion),
       correo(correo), telefono(telefono), sexo(sexo), turno(nullptr) // inicializa turno en nullptr
 {}
+Paciente::Paciente()
+    : nombre(""), apellido(""), cedula(""), direccion(""),
+      correo(""), telefono(""), sexo(""), turno(nullptr) {}
+
+
 
 Paciente::~Paciente() {
     delete turno; // solo si Paciente es dueño del turno
