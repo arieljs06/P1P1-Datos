@@ -34,6 +34,7 @@ public:
     void capitalizar(std::string& nom);
     void moduloArbolTurnos();
     void cargarTurnosEnArbol();
+    void buscarTurnoQr();
 
 };
 

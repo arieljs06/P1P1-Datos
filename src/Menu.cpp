@@ -21,6 +21,7 @@
 #include "RedBlackTree.h"
 #include "Marquee.h"
 #include "qrcodegen.hpp"
+#include "lodepng.h"
 
 extern ArbolRojoNegro arbolTurnos;
 
@@ -52,9 +53,10 @@ void Menu::mostrarMenu() {
         "Buscar por Hash",
         "Modulo Arbol de Turnos",
         "Mostar Ayuda",
+        "Mostrar QR",
         "Salir"
     };
-    int n = 14;
+    int n = 15;
     int seleccion = 0;
     int tecla;
 
@@ -92,7 +94,8 @@ void Menu::mostrarMenu() {
                 case 10: std::cout<<"\n";buscarHashEnArchivo(); break;
                 case 11: std::cout<<"\n";moduloArbolTurnos(); break;
                 case 12: std::cout<<"\n";mostrarAyuda(); break;
-                case 13:
+                case 13: std::cout<<"\n";buscarTurnoQr(); break;
+                case 14:
                     std::cout << "Saliendo...\n";
                     return;
                 default:
@@ -184,7 +187,7 @@ void Menu::agregarTurno() {
         direccionCompleta = calles + ", " + ciudad + ", " + provincia;
 
         // Ejecutar el script de Python
-        std::string comandoPython = "python bin\\buscar_centros.py \"" + direccionCompleta + "\"";
+        std::string comandoPython = "python C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\buscar_centros.py \"" + direccionCompleta + "\"";
         std::cout << "\nBuscando centros médicos cercanos a:\n" << direccionCompleta << "\n\n";
         
         int resultado = system(comandoPython.c_str());
@@ -558,7 +561,7 @@ void Menu::mostrarTurnos() {
 
 void Menu::guardarBackup() {
     // Carpeta fija para los backups
-    std::string rutaBase = "bin\\backups\\";
+    std::string rutaBase = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\backups\\";
 
     // Crear la carpeta si no existe
     if (!std::filesystem::exists(rutaBase)) {
@@ -639,7 +642,7 @@ void limpiarArchivo(const std::string& nombreArchivo) {
 }
 
 void Menu::cargarBackup() {
-    std::string rutaBase = "bin\\backups\\";
+    std::string rutaBase = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\backups\\";
     if (!std::filesystem::exists(rutaBase) || !std::filesystem::is_directory(rutaBase)) {
         std::cout << "La carpeta de backups no existe.\n";
         return;
@@ -688,8 +691,10 @@ void Menu::cargarBackup() {
     }
 
     lista = ListaDoble(); // Limpiar la lista actual
-    limpiarArchivo("bin\\data\\Turnos.txt");
-    limpiarArchivo("bin\\data\\Tabla-Hash.txt");
+    limpiarArchivo("C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Turnos.txt");
+    limpiarArchivo("C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt");
+    limpiarArchivo("C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Pacientes.txt");
+    
     while (archivo.peek() != EOF) {
         FechaHora fecha;
         archivo.read(reinterpret_cast<char*>(&fecha), sizeof(FechaHora));
@@ -713,6 +718,7 @@ void Menu::cargarBackup() {
 
         if (!pacientes.buscarPorCedula(cedula)) {
             pacientes.agregar(new Paciente(nombre, apellido, cedula, direccion, correo, telefono, sexo));
+            guardarPacienteEnArchivo(p);
         }
     }
 
@@ -724,7 +730,7 @@ void Menu::cargarBackup() {
 // --- Mostrar ayuda ---
 void Menu::mostrarAyuda() {
 
-    std::string rutaAyuda = "bin\\CitasMedicas.chm";
+    std::string rutaAyuda = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\CitasMedicas.chm";
     HINSTANCE result = ShellExecuteA(
         NULL,
         "open",
@@ -791,7 +797,7 @@ void Menu::mostrarPacientes() {
 
 void guardarPacienteEnArchivo(Paciente *pacienteP) {
     Paciente paciente = *pacienteP;
-    const std::string RUTA_ARCHIVO = "bin\\data\\Pacientes.txt"; // Ruta fija interna
+    const std::string RUTA_ARCHIVO = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Pacientes.txt"; // Ruta fija interna
     
     std::ofstream archivo(RUTA_ARCHIVO, std::ios::app); // Modo append (añadir)
 
@@ -816,7 +822,7 @@ void guardarPacienteEnArchivo(Paciente *pacienteP) {
 
 void guardarTurnoEnArchivo(Turno *turnoP) {
     Turno turno = *turnoP;
-    const std::string RUTA_ARCHIVO = "bin\\data\\Turnos.txt"; // Ruta fija interna
+    const std::string RUTA_ARCHIVO = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Turnos.txt"; // Ruta fija interna
     
     std::ofstream archivo(RUTA_ARCHIVO, std::ios::app); // Modo append (añadir)
 
@@ -842,7 +848,7 @@ void guardarTurnoEnArchivo(Turno *turnoP) {
 }
 
 void Menu::cargarPacientesDesdeArchivo() {
-    const std::string pacienteArchivo = "bin\\data\\Pacientes.txt";
+    const std::string pacienteArchivo = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Pacientes.txt";
     std::ifstream archivo(pacienteArchivo);
     
     // Variables temporales para almacenar los datos
@@ -895,7 +901,7 @@ void Menu::cargarPacientesDesdeArchivo() {
 }
 
 void eliminarHashPorValor(const std::string& hashBuscado) {
-    const std::string rutaArchivo = "bin\\data\\Tabla-Hash.txt"; 
+    const std::string rutaArchivo = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt"; 
     std::ifstream archivoLectura(rutaArchivo);
     std::vector<std::string> lineas;
     std::string linea;
@@ -941,7 +947,7 @@ void eliminarHashPorValor(const std::string& hashBuscado) {
 }
 
 void Menu::cargarTurnosDesdeArchivoTXT() {
-    const std::string rutaArchivo = "bin\\data\\Turnos.txt"; // Ruta fija interna
+    const std::string rutaArchivo = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Turnos.txt"; // Ruta fija interna
     std::ifstream archivo(rutaArchivo);
     
     // Variables temporales para almacenar los datos
@@ -1018,7 +1024,7 @@ void Menu::cargarTurnosDesdeArchivoTXT() {
 }
 
 void eliminarTurnoPorCedula(const std::string& cedula) {
-    const std::string rutaArchivo = "bin\\data\\Turnos.txt";
+    const std::string rutaArchivo = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Turnos.txt";
     std::ifstream archivoLectura(rutaArchivo);
     std::vector<std::string> lineas;
     std::string linea;
@@ -1073,8 +1079,8 @@ void eliminarTurnoPorCedula(const std::string& cedula) {
 }
 
 void generarTablaHash() {
-    const std::string archivoEntrada = "bin\\data\\Turnos.txt";
-    const std::string archivoSalida = "bin\\data\\Tabla-Hash.txt";
+    const std::string archivoEntrada = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Turnos.txt";
+    const std::string archivoSalida = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
     std::ifstream entrada(archivoEntrada);
     std::ofstream salida(archivoSalida);
     
@@ -1114,7 +1120,7 @@ void generarTablaHash() {
 
 void imprimirTablaHash() {
     generarTablaHash();
-    const std::string nombreArchivo = "bin\\data\\Tabla-Hash.txt";
+    const std::string nombreArchivo = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
     std::ifstream archivo(nombreArchivo);
     
     if (!archivo) {
@@ -1187,7 +1193,7 @@ std::string base64_decode(const std::string &encoded_string) {
 
 void Menu::buscarHashEnArchivo() {
     generarTablaHash();
-    const std::string rutaArchivo = "bin\\data\\Tabla-Hash.txt";
+    const std::string rutaArchivo = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
     // 1. Pedir el hash al usuario
     std::string hashBuscado;
     std::cout << "Ingrese el hash a buscar: ";
@@ -1226,7 +1232,7 @@ void Menu::buscarHashEnArchivo() {
 }
 
 void Menu::cargarTurnosEnArbol() {
-const std::string ruta = "bin/data/Turnos.txt";
+const std::string ruta = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Turnos.txt";
     std::ifstream archivo(ruta);
     if (!archivo.is_open()) {
         std::cerr << "No se pudo abrir " << ruta << "\n";
@@ -1352,8 +1358,79 @@ static void printQRHighContrast(const QrCode &qr) {
     }
 }
 
+static bool saveAndOpenQRImage(
+    const qrcodegen::QrCode& qr,
+    const std::string& filename = "qr.png",
+    int moduleSize = 10,
+    unsigned int lightColor = 0xFFFFFFFF,
+    unsigned int darkColor = 0x000000FF,
+    int borderModules = 4  // Nuevo parámetro para especificar el tamaño del borde
+) {
+    if (moduleSize < 1) moduleSize = 1;
+    if (borderModules < 1) borderModules = 1;  // Mínimo 1 módulo de borde
+
+    // Calcular dimensiones incluyendo el borde
+    int qrSize = qr.getSize();
+    int imgWidth = (qrSize + 2 * borderModules) * moduleSize;
+    int imgHeight = (qrSize + 2 * borderModules) * moduleSize;
+    
+    std::vector<unsigned char> image(imgWidth * imgHeight * 4); // RGBA
+
+    // Rellenar todo el fondo con el color claro (borde)
+    std::fill(image.begin(), image.end(), 0xFF); // Blanco por defecto
+
+    // Dibujar los módulos del QR (incluyendo el borde)
+    for (int y = 0; y < qrSize; y++) {
+        for (int x = 0; x < qrSize; x++) {
+            unsigned int color = qr.getModule(x, y) ? darkColor : lightColor;
+            
+            // Calcular posición en la imagen con el borde
+            int imgX = (x + borderModules) * moduleSize;
+            int imgY = (y + borderModules) * moduleSize;
+            
+            // Dibujar el módulo escalado
+            for (int dy = 0; dy < moduleSize; dy++) {
+                for (int dx = 0; dx < moduleSize; dx++) {
+                    int idx = 4 * ((imgY + dy) * imgWidth + (imgX + dx));
+                    image[idx + 0] = (color >> 24) & 0xFF; // R
+                    image[idx + 1] = (color >> 16) & 0xFF; // G
+                    image[idx + 2] = (color >> 8) & 0xFF;  // B
+                    image[idx + 3] = color & 0xFF;         // A
+                }
+            }
+        }
+    }
+
+    // Guardar la imagen
+    if (lodepng::encode(filename, image, imgWidth, imgHeight) != 0) {
+        std::cerr << "Error al guardar la imagen." << std::endl;
+        return false;
+    }
+
+    // Abrir la imagen
+    #ifdef _WIN32
+        std::string command = "start " + filename;
+    #elif _APPLE_
+        std::string command = "open " + filename;
+    #else
+        std::string command = "xdg-open " + filename;
+    #endif
+
+    std::system(command.c_str());
+    return true;
+}
+
 static void generateQRCodeFromString(const std::string &text) {
 
+    size_t start = text.find("Cédula: ") + 8;  // 8 = longitud de "Cédula: "
+    size_t end = text.find("\n", start);
+    std::string cedula = text.substr(start, end - start);
+
+    // Eliminar todos los espacios en blanco
+    cedula.erase(std::remove_if(cedula.begin(), cedula.end(), ::isspace), cedula.end());
+
+    std::string ruta = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\img\\"+cedula+".png";
+    
     if (text.empty()) {
         std::cout << "Error: El texto a codificar está vacío.\n";
         return;
@@ -1362,9 +1439,37 @@ static void generateQRCodeFromString(const std::string &text) {
     try {
         const QrCode qr = QrCode::encodeText(text.c_str(), QrCode::Ecc::MEDIUM);        
         // Mostramos el QR con fondo negro y módulos blancos
-        printQRHighContrast(qr);
+        //printQRHighContrast(qr);
+        saveAndOpenQRImage(qr, ruta);
 
     } catch (const qrcodegen::data_too_long &e) {
         std::cout << "\nError: Texto demasiado largo. Intente con menos caracteres.\n\n";
+    }
+}
+
+void abrirPNG(const std::string& rutaPNG) {
+    std::string comando;
+    
+    #ifdef _WIN32
+        // Windows
+        comando = "start \"\" \"" + rutaPNG + "\"";
+    #elif _APPLE_
+        // macOS
+        comando = "open \"" + rutaPNG + "\"";
+    #else
+        // Linux y otros Unix
+        comando = "xdg-open \"" + rutaPNG + "\"";
+    #endif
+
+    int resultado = system(comando.c_str());
+}
+
+void Menu::buscarTurnoQr() {
+    std::string cedula = validarNumeros("Ingrese cedula para buscar: ");
+    Turno* turnoPtr = lista.buscarPorCedula(cedula);
+    if (turnoPtr) {
+        abrirPNG("C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\img\\" + cedula + ".png");
+    } else {
+        std::cout << "Turno no encontrado.\n";
     }
 }
