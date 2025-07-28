@@ -1,22 +1,11 @@
-Nombre:  
-Apellido:  
-Cédula:  1803005071
-Dirección: la colina
-Correo: .@espe.edu.ec
-Telefono: 0984074616
-Sexo: M
-Provincia: Pichincha
-Ciudad: Sangolqui
-Fecha y Hora 12/12/2025 -> 8:0
-------------------------------
-Nombre: Denilson
-Apellido: Sousa
-Cédula:  1753128089
-Dirección: espe
-Correo: a2@gmail.com
+Nombre: Daniel
+Apellido: Estrella
+Cédula: 1752733012
+Dirección: orquideas
+Correo: daestrella8@espe.edu
 Telefono: 0999999999
 Sexo: M
 Provincia: Pichincha
-Ciudad: Sangolqui
-Fecha y Hora 12/12/2025 -> 8:20
+Ciudad: Quito
+Fecha y Hora 21/12/2025 -> 8:0
 ------------------------------

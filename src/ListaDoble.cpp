@@ -292,3 +292,13 @@ std::vector<std::pair<int, int>> ListaDoble::franjasDisponibles(const std::strin
 
     return disponibles;
 }
+
+void ListaDoble::limpiar() {
+    while (cabeza != nullptr) {
+        Nodo* temp = cabeza;
+        cabeza = cabeza->siguiente;
+        delete temp->dato;  // Liberar memoria del Turno
+        delete temp;        // Liberar memoria del Nodo
+    }
+    cola = nullptr;
+}

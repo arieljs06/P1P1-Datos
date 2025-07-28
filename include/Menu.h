@@ -36,6 +36,9 @@ public:
     void cargarTurnosEnArbol();
     void buscarTurnoQr();
 
+    std::vector<std::pair<std::string, std::string>> parsearBackupsJSON(const std::string& json);
+    std::string extraerCampoJSON(const std::string& json, const std::string& campo);
+
 };
 
 #endif // MENU_H

@@ -106,3 +106,14 @@ void ListaPacientes::bucketSortPorCriterio(CriterioOrdenPaciente criterio) {
 
     delete[] pacientesArr;
 }
+
+void ListaPacientes::limpiar() {
+    NodoPaciente* actual = cabeza;
+    while (actual != nullptr) {
+        NodoPaciente* siguiente = actual->siguiente;
+        delete actual->dato;    // Elimina el objeto Paciente
+        delete actual;          // Elimina el nodo
+        actual = siguiente;
+    }
+    cabeza = nullptr;  // Importante: restablecer la cabeza a nullptr
+}

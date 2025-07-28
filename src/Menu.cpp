@@ -22,6 +22,10 @@
 #include "Marquee.h"
 #include "qrcodegen.hpp"
 #include "lodepng.h"
+#include <map>   
+
+using namespace std;
+namespace fs = filesystem;
 
 extern ArbolRojoNegro arbolTurnos;
 
@@ -108,6 +112,7 @@ void Menu::mostrarMenu() {
 
 // --- Agregar paciente ---
 void Menu::agregarPaciente() {
+    cargarPacientesDesdeArchivo();
     std::string cedula = validarCedula("Ingrese cédula: ");
     if (pacientes.buscarPorCedula(cedula)) {
         std::cout << "Ya existe un paciente con esa cédula.\n";
@@ -159,6 +164,7 @@ void Menu::agregarPaciente() {
 
 // --- Agregar turno solo para pacientes ya registrados ---
 void Menu::agregarTurno() {
+    cargarPacientesDesdeArchivo();
     std::string cedula = validarCedula("Ingrese cédula del paciente: ");
     Paciente* paciente = pacientes.buscarPorCedula(cedula);
     Turno* turnopre = lista.buscarPorCedula(cedula);
@@ -187,7 +193,7 @@ void Menu::agregarTurno() {
         direccionCompleta = calles + ", " + ciudad + ", " + provincia;
 
         // Ejecutar el script de Python
-        std::string comandoPython = "python C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\buscar_centros.py \"" + direccionCompleta + "\"";
+        std::string comandoPython = "py bin\\buscar_centros.py \"" + direccionCompleta + "\"";
         std::cout << "\nBuscando centros médicos cercanos a:\n" << direccionCompleta << "\n\n";
         
         int resultado = system(comandoPython.c_str());
@@ -377,7 +383,7 @@ void Menu::reemplazarTurno() {
         std::getline(std::cin >> std::ws, calles);
         direccionCompleta = calles + ", " + ciudad + ", " + provincia;
 
-        std::string comando = "python bin\\buscar_centros.py \"" + direccionCompleta + "\"";
+        std::string comando = "py bin\\buscar_centros.py \"" + direccionCompleta + "\"";
         if (system(comando.c_str()) == 0) {
             direccionValida = true;
         } else {
@@ -487,6 +493,7 @@ void Menu::reemplazarTurno() {
 
 
 void Menu::mostrarTurnos() {
+    cargarTurnosDesdeArchivoTXT();
     std::vector<Turno*> turnos;
     Nodo* actual = lista.getCabeza();
     while (actual != nullptr) {
@@ -561,7 +568,7 @@ void Menu::mostrarTurnos() {
 
 void Menu::guardarBackup() {
     // Carpeta fija para los backups
-    std::string rutaBase = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\backups\\";
+    std::string rutaBase = "bin\\backups\\";
 
     // Crear la carpeta si no existe
     if (!std::filesystem::exists(rutaBase)) {
@@ -642,7 +649,7 @@ void limpiarArchivo(const std::string& nombreArchivo) {
 }
 
 void Menu::cargarBackup() {
-    std::string rutaBase = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\backups\\";
+    std::string rutaBase = "bin\\backups\\";
     if (!std::filesystem::exists(rutaBase) || !std::filesystem::is_directory(rutaBase)) {
         std::cout << "La carpeta de backups no existe.\n";
         return;
@@ -691,9 +698,12 @@ void Menu::cargarBackup() {
     }
 
     lista = ListaDoble(); // Limpiar la lista actual
-    limpiarArchivo("C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Turnos.txt");
-    limpiarArchivo("C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt");
-    limpiarArchivo("C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Pacientes.txt");
+    limpiarArchivo("bin\\data\\Pacientes.txt");
+    limpiarArchivo("bin\\data\\Turnos.txt");
+    limpiarArchivo("bin\\data\\Tabla-Hash.txt");
+    system("py bin\\servidor_intermedio.py vaciar_base_datos");
+    
+
     
     while (archivo.peek() != EOF) {
         FechaHora fecha;
@@ -716,32 +726,13 @@ void Menu::cargarBackup() {
         lista.agregar(t);
         guardarTurnoEnArchivo(t);
 
-        if (!pacientes.buscarPorCedula(cedula)) {
             pacientes.agregar(new Paciente(nombre, apellido, cedula, direccion, correo, telefono, sexo));
             guardarPacienteEnArchivo(p);
-        }
     }
 
     archivo.close();
     generarTablaHash();
     std::cout << "Backup restaurado correctamente desde: " << archivoElegido << "\n";
-}
-
-// --- Mostrar ayuda ---
-void Menu::mostrarAyuda() {
-
-    std::string rutaAyuda = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\CitasMedicas.chm";
-    HINSTANCE result = ShellExecuteA(
-        NULL,
-        "open",
-        "hh.exe", // Llama explícitamente al visor de ayuda de Windows
-        rutaAyuda.c_str(),
-        NULL,
-        SW_SHOWNORMAL
-    );
-    if ((INT_PTR)result <= 32) {
-        std::cerr << "No se pudo abrir el archivo de ayuda." << std::endl;
-    }
 }
 
 // --- Capitalizar nombres ---
@@ -791,47 +782,67 @@ std::string base64_encode(const std::string &in) {
 
 // --- Mostrar todos los pacientes ---
 void Menu::mostrarPacientes() {
+    cargarPacientesDesdeArchivo();
     std::cout << "----- LISTA DE PACIENTES REGISTRADOS -----\n";
     pacientes.mostrar(); 
 }
 
 void guardarPacienteEnArchivo(Paciente *pacienteP) {
     Paciente paciente = *pacienteP;
-    const std::string RUTA_ARCHIVO = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Pacientes.txt"; // Ruta fija interna
+    const std::string RUTA_ARCHIVO = "C:\\P1P1-Datos\\bin\\data\\Pacientes.txt";
+    const std::string PYTHON_SCRIPT = "py bin\\servidor_intermedio.py guardar_paciente";
     
-    std::ofstream archivo(RUTA_ARCHIVO, std::ios::app); // Modo append (añadir)
-
+    // 1. Guardar en archivo local (formato legible)
+    std::ofstream archivo(RUTA_ARCHIVO, std::ios::app);
     if (!archivo.is_open()) {
-        std::cerr << "Error: No se pudo abrir el archivo." << std::endl;
+        std::cerr << "Error: No se pudo abrir el archivo local." << std::endl;
         return;
     }
 
-    // Escribe los datos en el archivo (formato legible)
     archivo << "Nombre: " << paciente.getNombre() << "\n"
             << "Apellido: " << paciente.getApellido() << "\n"
-            << "Cédula:  " << paciente.getCedula() << "\n"
+            << "Cédula: " << paciente.getCedula() << "\n"
             << "Dirección: " << paciente.getDireccion() << "\n"
             << "Correo: " << paciente.getCorreo() << "\n"
             << "Telefono: " << paciente.getTelefono() << "\n"
             << "Sexo: " << paciente.getSexo() << "\n"
             << "------------------------------\n";
-
     archivo.close();
-    std::cout << "Paciente guardado en: " << RUTA_ARCHIVO << std::endl;
+
+    // 2. Preparar comando con parámetros individuales
+    std::ostringstream command;
+    command << PYTHON_SCRIPT << " "
+            << "\"" << paciente.getNombre() << "\" "
+            << "\"" << paciente.getApellido() << "\" "
+            << "\"" << paciente.getCedula() << "\" "
+            << "\"" << paciente.getDireccion() << "\" "
+            << "\"" << paciente.getCorreo() << "\" "
+            << "\"" << paciente.getTelefono() << "\" "
+            << "\"" << paciente.getSexo() << "\"";
+
+    // 3. Ejecutar el comando
+    int result = system(command.str().c_str());
+    
+    if (result != 0) {
+        std::cerr << "Error al enviar paciente a MongoDB. Código: " << result << std::endl;
+        std::cerr << "Comando ejecutado: " << command.str() << std::endl;
+    } else {
+        std::cout << "Paciente guardado en archivo y MongoDB: " << RUTA_ARCHIVO << std::endl;
+    }
 }
 
 void guardarTurnoEnArchivo(Turno *turnoP) {
     Turno turno = *turnoP;
-    const std::string RUTA_ARCHIVO = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Turnos.txt"; // Ruta fija interna
+    const std::string RUTA_ARCHIVO = "C:\\P1P1-Datos\\bin\\data\\Turnos.txt";
+    const std::string PYTHON_SCRIPT = "py bin\\servidor_intermedio.py guardar_turno";
     
-    std::ofstream archivo(RUTA_ARCHIVO, std::ios::app); // Modo append (añadir)
-
+    // 1. Guardar en archivo local (como antes)
+    std::ofstream archivo(RUTA_ARCHIVO, std::ios::app);
     if (!archivo.is_open()) {
-        std::cerr << "Error: No se pudo abrir el archivo." << std::endl;
+        std::cerr << "Error: No se pudo abrir el archivo local." << std::endl;
         return;
     }
 
-    // Escribe los datos en el archivo (formato legible)
     archivo << "Nombre: " << turno.getPaciente().getNombre() << "\n"
             << "Apellido: " << turno.getPaciente().getApellido() << "\n"
             << "Cédula:  " << turno.getPaciente().getCedula() << "\n"
@@ -843,12 +854,41 @@ void guardarTurnoEnArchivo(Turno *turnoP) {
             << "Ciudad: " << turno.getCiudad() << "\n"
             << "Fecha y Hora " << turno.getFechaHora().getDia() << "/" << turno.getFechaHora().getMes() << "/" << turno.getFechaHora().getAnio() << " -> " <<  turno.getFechaHora().getHora() << ":" << turno.getFechaHora().getMinuto() << "\n"
             << "------------------------------\n";
-
     archivo.close();
+    
+    // 2. Preparar comando con parámetros individuales
+    std::ostringstream command;
+    command << PYTHON_SCRIPT << " "
+            << "\"" << turno.getPaciente().getNombre() << "\" "
+            << "\"" << turno.getPaciente().getApellido() << "\" "
+            << "\"" << turno.getPaciente().getCedula() << "\" "
+            << "\"" << turno.getPaciente().getDireccion() << "\" "
+            << "\"" << turno.getPaciente().getCorreo() << "\" "
+            << "\"" << turno.getPaciente().getTelefono() << "\" "
+            << "\"" << turno.getPaciente().getSexo() << "\" "
+            << "\"" << turno.getProvincia() << "\" "
+            << "\"" << turno.getCiudad() << "\" "
+            << turno.getFechaHora().getDia() << " "
+            << turno.getFechaHora().getMes() << " "
+            << turno.getFechaHora().getAnio() << " "
+            << turno.getFechaHora().getHora() << " "
+            << turno.getFechaHora().getMinuto();
+
+    // 3. Ejecutar el comando
+    int result = system(command.str().c_str());
+    
+    if (result != 0) {
+        std::cerr << "Error al enviar datos a MongoDB. Código: " << result << std::endl;
+        std::cerr << "Comando ejecutado: " << command.str() << std::endl;
+    }
 }
 
 void Menu::cargarPacientesDesdeArchivo() {
-    const std::string pacienteArchivo = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Pacientes.txt";
+    pacientes.limpiar();
+    const std::string pacienteArchivo = "bin\\data\\Pacientes.txt";
+    
+    system("py bin\\sync_MongoDB.py pacientes bin\\data\\Pacientes.txt");
+
     std::ifstream archivo(pacienteArchivo);
     
     // Variables temporales para almacenar los datos
@@ -901,7 +941,7 @@ void Menu::cargarPacientesDesdeArchivo() {
 }
 
 void eliminarHashPorValor(const std::string& hashBuscado) {
-    const std::string rutaArchivo = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt"; 
+    const std::string rutaArchivo = "C:\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt"; 
     std::ifstream archivoLectura(rutaArchivo);
     std::vector<std::string> lineas;
     std::string linea;
@@ -947,7 +987,12 @@ void eliminarHashPorValor(const std::string& hashBuscado) {
 }
 
 void Menu::cargarTurnosDesdeArchivoTXT() {
-    const std::string rutaArchivo = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Turnos.txt"; // Ruta fija interna
+    lista.limpiar();
+    const std::string rutaArchivo = "C:\\P1P1-Datos\\bin\\data\\Turnos.txt"; // Ruta fija interna
+
+    system("py bin\\sync_MongoDB.py turnos C:\\P1P1-Datos\\bin\\data\\Turnos.txt");
+    
+
     std::ifstream archivo(rutaArchivo);
     
     // Variables temporales para almacenar los datos
@@ -969,7 +1014,7 @@ void Menu::cargarTurnosDesdeArchivoTXT() {
             apellido = linea.substr(10);
             apellido.erase(std::remove(apellido.begin(), apellido.end(), ' '), apellido.end());
         }
-        else if (linea.find("Cédula:  ") != std::string::npos) {
+        else if (linea.find("Cédula: ") != std::string::npos) {
             cedula = linea.substr(8);
             cedula.erase(std::remove(cedula.begin(), cedula.end(), ' '), cedula.end());
         }
@@ -1024,7 +1069,9 @@ void Menu::cargarTurnosDesdeArchivoTXT() {
 }
 
 void eliminarTurnoPorCedula(const std::string& cedula) {
-    const std::string rutaArchivo = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Turnos.txt";
+    const std::string rutaArchivo = "C:\\P1P1-Datos\\bin\\data\\Turnos.txt";
+    
+    // 1. Eliminar del archivo TXT (tu implementación actual)
     std::ifstream archivoLectura(rutaArchivo);
     std::vector<std::string> lineas;
     std::string linea;
@@ -1041,10 +1088,9 @@ void eliminarTurnoPorCedula(const std::string& cedula) {
     while (std::getline(archivoLectura, linea)) {
         lineas.push_back(linea);
         
-        // Buscar la cédula con DOS espacios después de "Cédula:"
-        if (linea.find("Cédula:  " + cedula) != std::string::npos) {
+        if (linea.find("Cédula: " + cedula) != std::string::npos) {
             encontrado = true;
-            inicioTurno = index - 2; // Retroceder 2 líneas hasta el "Nombre:"
+            inicioTurno = index - 2;
         }
         index++;
     }
@@ -1055,7 +1101,7 @@ void eliminarTurnoPorCedula(const std::string& cedula) {
         return;
     }
 
-    // Eliminar las 11 líneas que componen el turno
+    // Eliminar las líneas del turno
     if (inicioTurno >= 0 && inicioTurno + 11 <= lineas.size()) {
         lineas.erase(lineas.begin() + inicioTurno, lineas.begin() + inicioTurno + 11);
     } else {
@@ -1075,12 +1121,20 @@ void eliminarTurnoPorCedula(const std::string& cedula) {
     }
     archivoEscritura.close();
 
-    std::cout << "Turno con cédula " << cedula << " eliminado correctamente." << std::endl;
+    // 2. Eliminar de MongoDB
+    const std::string pythonCmd = "py bin\\eliminar_turno.py \"" + cedula + "\"";
+    int result = system(pythonCmd.c_str());
+    
+    if (result != 0) {
+        std::cerr << "Error al eliminar turno de MongoDB" << std::endl;
+    } else {
+        std::cout << "Turno con cédula " << cedula << " eliminado correctamente de ambos sistemas." << std::endl;
+    }
 }
 
 void generarTablaHash() {
-    const std::string archivoEntrada = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Turnos.txt";
-    const std::string archivoSalida = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
+    const std::string archivoEntrada = "C:\\P1P1-Datos\\bin\\data\\Turnos.txt";
+    const std::string archivoSalida = "C:\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
     std::ifstream entrada(archivoEntrada);
     std::ofstream salida(archivoSalida);
     
@@ -1120,7 +1174,7 @@ void generarTablaHash() {
 
 void imprimirTablaHash() {
     generarTablaHash();
-    const std::string nombreArchivo = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
+    const std::string nombreArchivo = "C:\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
     std::ifstream archivo(nombreArchivo);
     
     if (!archivo) {
@@ -1193,7 +1247,7 @@ std::string base64_decode(const std::string &encoded_string) {
 
 void Menu::buscarHashEnArchivo() {
     generarTablaHash();
-    const std::string rutaArchivo = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
+    const std::string rutaArchivo = "C:\\P1P1-Datos\\bin\\data\\Tabla-Hash.txt";
     // 1. Pedir el hash al usuario
     std::string hashBuscado;
     std::cout << "Ingrese el hash a buscar: ";
@@ -1232,7 +1286,7 @@ void Menu::buscarHashEnArchivo() {
 }
 
 void Menu::cargarTurnosEnArbol() {
-const std::string ruta = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\data\\Turnos.txt";
+const std::string ruta = "C:\\P1P1-Datos\\bin\\data\\Turnos.txt";
     std::ifstream archivo(ruta);
     if (!archivo.is_open()) {
         std::cerr << "No se pudo abrir " << ruta << "\n";
@@ -1429,7 +1483,7 @@ static void generateQRCodeFromString(const std::string &text) {
     // Eliminar todos los espacios en blanco
     cedula.erase(std::remove_if(cedula.begin(), cedula.end(), ::isspace), cedula.end());
 
-    std::string ruta = "C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\img\\"+cedula+".png";
+    std::string ruta = "C:\\P1P1-Datos\\bin\\img\\"+cedula+".png";
     
     if (text.empty()) {
         std::cout << "Error: El texto a codificar está vacío.\n";
@@ -1468,8 +1522,24 @@ void Menu::buscarTurnoQr() {
     std::string cedula = validarNumeros("Ingrese cedula para buscar: ");
     Turno* turnoPtr = lista.buscarPorCedula(cedula);
     if (turnoPtr) {
-        abrirPNG("C:\\Users\\Usuario\\Desktop\\ariel\\Uvsc\\P1P1-Datos\\bin\\img\\" + cedula + ".png");
+        abrirPNG("C:\\P1P1-Datos\\bin\\img\\" + cedula + ".png");
     } else {
         std::cout << "Turno no encontrado.\n";
+    }
+}
+
+void Menu::mostrarAyuda() {
+
+    std::string rutaAyuda = "bin\\CitasMedicas.chm";
+    HINSTANCE result = ShellExecuteA(
+        NULL,
+        "open",
+        "hh.exe", // Llama explícitamente al visor de ayuda de Windows
+        rutaAyuda.c_str(),
+        NULL,
+        SW_SHOWNORMAL
+    );
+    if ((INT_PTR)result <= 32) {
+        std::cerr << "No se pudo abrir el archivo de ayuda." << std::endl;
     }
 }

@@ -23,6 +23,7 @@ public:
     void mostrar();
     enum class CriterioOrdenPaciente { NOMBRE, APELLIDO, FECHA };
     void bucketSortPorCriterio(CriterioOrdenPaciente criterio);
+    void limpiar();
 
 };
 

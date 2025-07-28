@@ -27,6 +27,7 @@ public:
                                        const std::string& nuevaProvincia, const std::string& nuevaCiudad);
 
     void mostrar();
+    void limpiar();
     Nodo* getCabeza();
     bool existeTurno(int dia, int mes, int anio, int hora, int minuto, const std::string& provincia, const std::string& ciudad);
     int getSize() const;
